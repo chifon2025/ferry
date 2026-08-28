@@ -27,6 +27,13 @@
 
 根目錄即站點，GitHub Pages 直接指向 main 分支根目錄即可，無任何建置步驟。
 
+## 安裝成手機 App
+
+- iPhone／iPad：用 Safari 開啟 Pages 網址，點「分享」→「加入主畫面」
+- Android：用 Chrome 開啟 Pages 網址，點選單中的「安裝應用程式」或「加到主畫面」
+- 安裝後以直式獨立視窗開啟；完成首次載入後可在離線狀態遊玩
+- 更新離線資源時遞增 `sw.js` 內的 `CACHE_VERSION`；這只清舊快取，不會清除玩家的 `localStorage` 存檔
+
 ## 文件
 
 - 設計裁示與鐵律見 [專案憲章.md](專案憲章.md)
