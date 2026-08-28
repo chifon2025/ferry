@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#f4efe6">
+<meta name="description" content="《渡》——一天一局的水墨渡口。相信真我，回歸平靜，做好當下，允許成真。">
+<title>渡</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 水墨渡口場景 -->
+<svg id="scene" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <!-- 朱砂月 -->
+  <circle cx="308" cy="92" r="24" fill="#b6512f" opacity="0.26"/>
+
+  <!-- 遠山（淡墨層疊） -->
+  <path d="M0,302 Q80,236 160,286 Q225,322 390,268 L390,345 L0,345 Z" fill="#4a5158" opacity="0.12"/>
+  <path d="M0,322 Q120,262 212,306 Q300,340 390,302 L390,350 L0,350 Z" fill="#3a4148" opacity="0.10"/>
+  <path d="M235,332 Q300,282 390,320 L390,352 L235,352 Z" fill="#3a4148" opacity="0.16"/>
+
+  <!-- 河（留白為主，淡淡水痕） -->
+  <rect x="0" y="340" width="390" height="212" fill="#93aab4" opacity="0.10"/>
+  <path d="M46,412 q34,-7 72,0 q32,6 64,0" fill="none" stroke="#3f4a52" stroke-width="1.4" opacity="0.16"/>
+  <path d="M180,470 q30,-6 62,0 q28,5 58,0" fill="none" stroke="#3f4a52" stroke-width="1.4" opacity="0.14"/>
+  <path d="M70,510 q26,-5 54,0" fill="none" stroke="#3f4a52" stroke-width="1.2" opacity="0.12"/>
+
+  <!-- 上游小舟（慕名而來的船家，後期出現） -->
+  <g id="g-boat2" class="hidden-part" transform="translate(72,378) scale(0.5)">
+    <path d="M-45,0 Q0,15 45,0 Q28,11 0,13 Q-28,11 -45,0 Z" fill="#2f2a26" opacity="0.7"/>
+    <line x1="8" y1="-2" x2="20" y2="-34" stroke="#2f2a26" stroke-width="2.4" opacity="0.7"/>
+  </g>
+
+  <!-- 主舟 -->
+  <g id="g-boat" transform="translate(140,458)">
+    <g class="bob">
+      <path d="M-48,0 Q0,17 48,0 Q30,11 0,13 Q-30,11 -48,0 Z" fill="#26221e"/>
+      <circle cx="6" cy="-13" r="5" fill="#26221e"/>
+      <path d="M6,-8 q-2,6 -1,9" stroke="#26221e" stroke-width="4" fill="none"/>
+      <line x1="12" y1="-2" x2="30" y2="-48" stroke="#26221e" stroke-width="2.6"/>
+    </g>
+    <path d="M-40,16 q40,7 80,0" stroke="#26221e" stroke-width="1.2" fill="none" opacity="0.16"/>
+  </g>
+
+  <!-- 岸 -->
+  <path d="M0,548 Q120,528 222,548 Q322,568 390,552 L390,780 L0,780 Z" fill="#2e3236" opacity="0.92"/>
+
+  <!-- 棧橋 -->
+  <polygon points="58,606 212,560 234,578 84,646" fill="#211c18"/>
+  <line x1="212" y1="566" x2="212" y2="596" stroke="#211c18" stroke-width="5"/>
+  <line x1="196" y1="572" x2="196" y2="600" stroke="#211c18" stroke-width="5"/>
+
+  <!-- 茶棚（後期出現） -->
+  <g id="g-teahouse" class="hidden-part" transform="translate(20,470)">
+    <path d="M-4,32 L40,4 L84,32 Z" fill="#26221e"/>
+    <line x1="6" y1="32" x2="6" y2="78" stroke="#26221e" stroke-width="4"/>
+    <line x1="74" y1="32" x2="74" y2="78" stroke="#26221e" stroke-width="4"/>
+    <line x1="0" y1="80" x2="80" y2="80" stroke="#26221e" stroke-width="4"/>
+    <rect x="36" y="34" width="10" height="22" fill="#b6512f" opacity="0.85"/>
+  </g>
+
+  <!-- 燈（第一個變化） -->
+  <g id="g-lamp" transform="translate(314,468)">
+    <circle id="lampGlow" cx="-9" cy="30" r="42" fill="#e0a83f" opacity="0"/>
+    <line x1="0" y1="150" x2="0" y2="18" stroke="#26221e" stroke-width="4"/>
+    <path d="M0,18 q-12,2 -16,10" stroke="#26221e" stroke-width="3" fill="none"/>
+    <rect id="lampBox" x="-15" y="26" width="11" height="15" rx="2" fill="#26221e"/>
+  </g>
+
+  <!-- 紅花（後期出現） -->
+  <g id="g-flowers" class="hidden-part" transform="translate(252,580)">
+    <path d="M2,16 q-1,-8 1,-14 M12,18 q0,-9 3,-15 M22,16 q1,-7 0,-13" stroke="#1e1b18" stroke-width="1.6" fill="none"/>
+    <circle cx="3" cy="1" r="3" fill="#b6512f"/>
+    <circle cx="15" cy="2" r="3.4" fill="#b6512f"/>
+    <circle cx="22" cy="2" r="2.6" fill="#b6512f"/>
+    <circle cx="9" cy="6" r="2.4" fill="#b6512f" opacity="0.8"/>
+  </g>
+
+  <!-- 貓（後期出現） -->
+  <g id="g-cat" class="hidden-part" transform="translate(150,588)">
+    <ellipse cx="0" cy="0" rx="11" ry="6.5" fill="#17140f"/>
+    <circle cx="11" cy="-6" r="4.6" fill="#17140f"/>
+    <path d="M8,-9 l-1,-4 l3,2 Z M13,-10 l1,-4 l2,3 Z" fill="#17140f"/>
+    <path d="M-10,1 q-8,-2 -7,-10" stroke="#17140f" stroke-width="2.4" fill="none"/>
+  </g>
+
+  <!-- 蘆葦 -->
+  <g stroke="#17140f" stroke-width="1.8" fill="none" opacity="0.85">
+    <path d="M28,712 q-2,-34 6,-52"/>
+    <path d="M40,716 q2,-40 -4,-58"/>
+    <path d="M52,714 q-1,-30 8,-46"/>
+  </g>
+
+  <!-- 朱印 -->
+  <g transform="translate(338,714)">
+    <rect x="0" y="0" width="26" height="26" rx="3" fill="#b6512f" opacity="0.9"/>
+    <text x="13" y="19" text-anchor="middle" font-size="16" fill="#f4efe6" style="font-family:serif">渡</text>
+  </g>
+</svg>
+
+<!-- 頂欄 -->
+<header id="top">
+  <span id="title">渡</span>
+  <span id="dateLabel"></span>
+</header>
+
+<!-- 閒時底欄 -->
+<nav id="idleBar" class="hidden">
+  <button id="btnRound" class="btn main"></button>
+  <div class="row">
+    <button id="btnQuotes" class="btn small">字帖</button>
+    <button id="btnMail" class="btn small">信匣<span id="mailDot" class="dot hidden"></span></button>
+    <button id="btnSet" class="btn small ghost">…</button>
+  </div>
+</nav>
+
+<!-- 卡片層 -->
+<div id="overlay" class="hidden"></div>
+
+<!-- 霧 -->
+<div id="fog"></div>
+
+<!-- 收尾暗幕 -->
+<div id="dusk"></div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+/* 《渡》—— 水墨、留白、不發燙 */
+:root {
+  --paper: #f4efe6;
+  --paper-card: #faf6ee;
+  --ink: #26221e;
+  --ink-soft: #5c554c;
+  --cinnabar: #b6512f;
+  --line: rgba(38, 34, 30, 0.18);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Noto Serif TC", "Songti TC", "PMingLiU", "MingLiU", serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hidden { display: none !important; }
+.hidden-part { opacity: 0; transition: opacity 2.5s ease; }
+.hidden-part.shown { opacity: 1; }
+
+#lampGlow { transition: opacity 3s ease; }
+
+/* 舟的輕晃 */
+.bob { animation: bob 7s ease-in-out infinite; }
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(0.3deg); }
+  50% { transform: translateY(4px) rotate(-0.4deg); }
+}
+
+/* 頂欄 */
+#top {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: calc(14px + env(safe-area-inset-top)) 20px 0;
+  pointer-events: none;
+}
+#title { font-size: 22px; letter-spacing: 6px; opacity: 0.85; }
+#dateLabel { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
+
+/* 底欄 */
+#idleBar {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+}
+#idleBar .row { display: flex; gap: 10px; }
+
+.btn {
+  font-family: inherit;
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: var(--ink);
+  background: var(--paper-card);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 26px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.btn:active { transform: scale(0.97); background: #efe8da; }
+.btn.main { min-width: 200px; box-shadow: 0 2px 10px rgba(38, 34, 30, 0.08); }
+.btn.small { font-size: 14px; padding: 9px 18px; position: relative; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--ink-soft); }
+
+.dot {
+  position: absolute;
+  top: 7px; right: 8px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--cinnabar);
+}
+
+/* 卡片層 */
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(244, 239, 230, 0.55);
+  overflow-y: auto;
+}
+.card {
+  width: 100%;
+  max-width: 330px;
+  background: var(--paper-card);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(38, 34, 30, 0.10);
+  padding: 24px 22px;
+  animation: rise 0.45s ease;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.card h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.card p {
+  font-size: 15.5px;
+  line-height: 1.9;
+  color: var(--ink);
+  white-space: pre-line;
+}
+.card .muted { color: var(--ink-soft); font-size: 13.5px; }
+.card .acts { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.card .acts .btn { width: 100%; text-align: left; letter-spacing: 1px; }
+.card .acts .btn.center { text-align: center; letter-spacing: 3px; }
+
+/* 兩種聲音 */
+.voice { padding: 13px 16px; line-height: 1.7; font-size: 15px; }
+.voice .who {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+.voice.rush .who { color: #8a3324; }
+.voice.calm .who { color: #3d5a66; }
+
+/* 金句 */
+.quote-text {
+  font-size: 17px;
+  line-height: 2;
+  letter-spacing: 1px;
+  padding: 8px 2px 2px;
+}
+.quote-src { text-align: right; color: var(--ink-soft); font-size: 12px; margin-top: 8px; }
+
+/* 字帖／信匣清單 */
+.scroll-list { max-height: 52vh; overflow-y: auto; margin-top: 6px; }
+.scroll-list .item {
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+  line-height: 1.85;
+  white-space: pre-line;
+}
+.scroll-list .item:last-child { border-bottom: none; }
+.scroll-list .src { color: var(--ink-soft); font-size: 12px; }
+
+/* 今日事 */
+.chore {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.chore .mark { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
+.chore.done { background: #efe8da; border-color: transparent; }
+.chore.done .mark { color: var(--cinnabar); }
+.chore-line {
+  min-height: 26px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* 靜坐 */
+.sit-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 10px 0; }
+.breath {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  opacity: 0.75;
+  animation: breath 8s ease-in-out infinite;
+}
+@keyframes breath {
+  0%, 100% { transform: scale(1); opacity: 0.45; }
+  50% { transform: scale(1.28); opacity: 0.8; }
+}
+.sit-hint { font-size: 14px; color: var(--ink-soft); letter-spacing: 2px; }
+
+/* 霧 */
+#fog {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(244,239,230,0.6), rgba(244,239,230,1) 75%),
+    var(--paper);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 6.5s ease;
+}
+#fog.on { opacity: 1; transition: opacity 0.4s ease; pointer-events: all; }
+#fog.lifting { opacity: 0; pointer-events: none; }
+
+/* 收尾暗幕 */
+#dusk {
+  position: fixed;
+  inset: 0;
+  background: #17140f;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 3.5s ease;
+}
+#dusk.on { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bob, .breath { animation: none; }
+  .card { animation: none; }
+  #fog { transition: opacity 1s ease; }
+}
