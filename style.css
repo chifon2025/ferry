@@ -41,9 +41,99 @@ html, body {
   50% { transform: translateY(4px) rotate(-0.4deg); }
 }
 
+/* 蘆葦輕搖 */
+#g-reeds {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: sway 6.5s ease-in-out infinite alternate;
+}
+@keyframes sway {
+  from { transform: rotate(-1.4deg); }
+  to { transform: rotate(1.6deg); }
+}
+
+/* 水紋微動 */
+#g-water { animation: drift 13s ease-in-out infinite alternate; }
+@keyframes drift {
+  from { transform: translateX(-5px); }
+  to { transform: translateX(7px); }
+}
+
+/* 雲極慢漂移 */
+#g-clouds { animation: clouds 85s ease-in-out infinite alternate; }
+@keyframes clouds {
+  from { transform: translateX(-14px); }
+  to { transform: translateX(26px); }
+}
+
+/* 雁群：偶爾掠過，其餘時間歇在畫外 */
+#g-birds { animation: fly 52s linear infinite; }
+@keyframes fly {
+  0% { transform: translate(-60px, 210px); opacity: 0; }
+  3% { opacity: 0.55; }
+  30% { transform: translate(300px, 110px); opacity: 0.55; }
+  36% { transform: translate(440px, 80px); opacity: 0; }
+  100% { transform: translate(440px, 80px); opacity: 0; }
+}
+
+/* 天色（依真實時辰） */
+#tint {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 3s ease;
+}
+body[data-tod="dawn"] #tint {
+  background: linear-gradient(180deg, rgba(228, 170, 96, 0.22), transparent 62%);
+  opacity: 1;
+}
+body[data-tod="dusk"] #tint {
+  background: linear-gradient(180deg, rgba(182, 81, 47, 0.20), rgba(182, 81, 47, 0.05) 55%, transparent 75%);
+  opacity: 1;
+}
+body[data-tod="night"] #tint {
+  background: linear-gradient(180deg, rgba(30, 36, 54, 0.38), rgba(30, 36, 54, 0.24));
+  opacity: 1;
+}
+body[data-tod="night"] #moon { opacity: 0.55; }
+
+/* 天氣 */
+body[data-weather="cloud"] #g-clouds, body[data-weather="rain"] #g-clouds { opacity: 0.5; }
+#mist {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 3s ease;
+  background: radial-gradient(ellipse at 50% 55%, rgba(244, 239, 230, 0.35), rgba(244, 239, 230, 0.75));
+}
+body[data-weather="mist"] #mist { opacity: 0.55; }
+#rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  display: none;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    104deg,
+    transparent 0 16px,
+    rgba(70, 82, 92, 0.16) 16px 17px
+  );
+  animation: rainfall 1.3s linear infinite;
+}
+body[data-weather="rain"] #rain { display: block; }
+@keyframes rainfall {
+  to { background-position: -22px 86px; }
+}
+
 /* 頂欄 */
 #top {
   position: fixed;
+  z-index: 5;
   top: 0; left: 0; right: 0;
   display: flex;
   justify-content: space-between;
@@ -69,6 +159,7 @@ html, body {
 /* 底欄 */
 #idleBar {
   position: fixed;
+  z-index: 5;
   left: 0; right: 0;
   bottom: calc(18px + env(safe-area-inset-bottom));
   display: flex;
@@ -102,6 +193,81 @@ html, body {
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--cinnabar);
+}
+
+/* 渡我一下：急時的救生圈 */
+.btn.help {
+  border-color: rgba(182, 81, 47, 0.45);
+  color: var(--cinnabar);
+  letter-spacing: 4px;
+}
+
+/* 今日隨身句 */
+#carry {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(158px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+  letter-spacing: 1.5px;
+  line-height: 1.7;
+  padding: 0 40px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 長卷 */
+.scroll-wrap {
+  overflow-x: auto;
+  margin-top: 10px;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-wrap svg { display: block; }
+
+/* 字帖的「掛」鈕 */
+.hang {
+  float: right;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px 10px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+.hang.on { color: var(--cinnabar); border-color: rgba(182, 81, 47, 0.5); }
+
+/* 夜渡：種自己的事 */
+.night-input {
+  width: 100%;
+  margin-top: 14px;
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  background: #f3ecdf;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+}
+.night-input::placeholder { color: #a89f8f; }
+
+/* 渡我一下的行句 */
+.ferry-line {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  letter-spacing: 3px;
+  text-align: center;
+  line-height: 1.9;
 }
 
 /* 卡片層 */
@@ -298,7 +464,9 @@ html, body {
 #dusk.on { opacity: 0.55; }
 
 @media (prefers-reduced-motion: reduce) {
-  .bob, .core, .ripple, .breath-label .in, .breath-label .out { animation: none; }
+  .bob, .core, .ripple, .breath-label .in, .breath-label .out,
+  #g-reeds, #g-water, #g-clouds, #g-birds, #rain { animation: none; }
+  #g-birds { opacity: 0; }
   .core { transform: scale(1); }
   .breath-label .in { opacity: 0.95; }
   .card { animation: none; }
