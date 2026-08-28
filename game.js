@@ -197,8 +197,8 @@ async function runRound(kind) {
       k: v.k, cls: v.cls,
       html: `<span class="who">${v.who}</span>${esc(v.line)}`
     }));
-    // 主公裁示：急與靜之間插一口氣（取講義第九章）——先撕掉災難化想像，再聽靜的
-    btns.splice(1, 0, { div: true, html: "先只看事實，別急著加上「完了」「糟了」。" });
+    // 主公親擬橋句：先安住，再把眼睛拉回「事實＋處理」
+    btns.splice(1, 0, { div: true, html: "別急，只看事實要怎麼處理。" });
     const choice = await showCard(
       `<h2>${esc(sc.title)}</h2><p>${esc(sc.text)}</p><p class="muted" style="margin-top:10px">心裡響起兩個聲音——</p>`,
       btns
