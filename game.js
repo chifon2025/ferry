@@ -60,7 +60,9 @@ function showCard(html, buttons) {
   return new Promise((resolve) => {
     overlay.classList.remove("hidden");
     const acts = buttons.map((b) =>
-      `<button class="btn ${b.cls || "center"}" data-k="${b.k}">${b.html || esc(b.label)}</button>`
+      b.div
+        ? `<div class="between">${b.html}</div>`
+        : `<button class="btn ${b.cls || "center"}" data-k="${b.k}">${b.html || esc(b.label)}</button>`
     ).join("");
     overlay.innerHTML = `<div class="card">${html}${acts ? `<div class="acts">${acts}</div>` : ""}</div>`;
     overlay.querySelectorAll("[data-k]").forEach((el) => {
@@ -191,12 +193,15 @@ async function runRound(kind) {
       { k: "calm", who: "靜的聲音", line: sc.calm, cls: "voice calm" }
     ];
 
+    const btns = voices.map((v) => ({
+      k: v.k, cls: v.cls,
+      html: `<span class="who">${v.who}</span>${esc(v.line)}`
+    }));
+    // 主公裁示：急與靜之間插一口氣——人性是急的先跳出來，停一下才聽得見靜的
+    btns.splice(1, 0, { div: true, html: "停一口氣——現在，是誰在做決定？" });
     const choice = await showCard(
       `<h2>${esc(sc.title)}</h2><p>${esc(sc.text)}</p><p class="muted" style="margin-top:10px">心裡響起兩個聲音——</p>`,
-      voices.map((v) => ({
-        k: v.k, cls: v.cls,
-        html: `<span class="who">${v.who}</span>${esc(v.line)}`
-      }))
+      btns
     );
     hideCard();
 
