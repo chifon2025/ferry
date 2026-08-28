@@ -305,8 +305,12 @@ async function meditate() {
   overlay.classList.remove("hidden");
   overlay.innerHTML =
     `<div class="card"><div class="sit-wrap">` +
-    `<div class="breath"></div>` +
-    `<div class="sit-hint" id="sitHint">什麼都不用做。跟著圈，呼吸。</div>` +
+    `<div class="pond">` +
+    `<span class="ripple r1"></span><span class="ripple r2"></span><span class="ripple r3"></span>` +
+    `<div class="core"></div>` +
+    `<div class="breath-label"><span class="in">吸</span><span class="out">呼</span></div>` +
+    `</div>` +
+    `<div class="sit-hint" id="sitHint">什麼都不用做。跟著水紋，呼吸。</div>` +
     `<button class="btn small ghost" id="sitQuit">先不坐了</button>` +
     `</div></div>`;
 

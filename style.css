@@ -209,18 +209,64 @@ html, body {
   text-align: center;
 }
 
-/* 靜坐 */
-.sit-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 10px 0; }
-.breath {
-  width: 74px; height: 74px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  opacity: 0.75;
-  animation: breath 8s ease-in-out infinite;
+/* 靜坐：墨核隨呼吸脹縮，水紋一圈圈漾開（8 秒一息：吸 → 呼） */
+.sit-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 6px 0; }
+.pond {
+  position: relative;
+  width: 150px; height: 150px;
+  display: flex; align-items: center; justify-content: center;
 }
-@keyframes breath {
-  0%, 100% { transform: scale(1); opacity: 0.45; }
-  50% { transform: scale(1.28); opacity: 0.8; }
+.core {
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #4d463d, var(--ink));
+  opacity: 0.88;
+  animation: breathe 8s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(0.8); }
+  42% { transform: scale(1.18); }
+  55% { transform: scale(1.16); }
+}
+.ripple {
+  position: absolute;
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  opacity: 0;
+  animation: ripple 8s ease-out infinite;
+}
+.ripple.r2 { animation-delay: 2.7s; }
+.ripple.r3 { animation-delay: 5.4s; }
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.32; }
+  70% { opacity: 0.08; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.breath-label {
+  position: absolute;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--paper-card);
+  pointer-events: none;
+}
+.breath-label .in, .breath-label .out {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+.breath-label .in { animation: showIn 8s ease-in-out infinite; }
+.breath-label .out { animation: showOut 8s ease-in-out infinite; }
+@keyframes showIn {
+  0%, 4% { opacity: 0; }
+  14%, 36% { opacity: 0.95; }
+  46%, 100% { opacity: 0; }
+}
+@keyframes showOut {
+  0%, 52% { opacity: 0; }
+  62%, 88% { opacity: 0.95; }
+  98%, 100% { opacity: 0; }
 }
 .sit-hint { font-size: 14px; color: var(--ink-soft); letter-spacing: 2px; }
 
@@ -252,7 +298,9 @@ html, body {
 #dusk.on { opacity: 0.55; }
 
 @media (prefers-reduced-motion: reduce) {
-  .bob, .breath { animation: none; }
+  .bob, .core, .ripple, .breath-label .in, .breath-label .out { animation: none; }
+  .core { transform: scale(1); }
+  .breath-label .in { opacity: 0.95; }
   .card { animation: none; }
   #fog { transition: opacity 1s ease; }
 }
