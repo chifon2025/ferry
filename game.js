@@ -185,12 +185,11 @@ async function runRound(kind) {
     const sc = pickScenario();
     S.usedScenarios.push(sc.id);
 
-    // 兩種聲音，上下順序隨機
+    // 主公裁示：固定順序——急的聲音在上（先跳出來的總是它），靜的聲音在下
     const voices = [
       { k: "rush", who: "急的聲音", line: sc.rush, cls: "voice rush" },
       { k: "calm", who: "靜的聲音", line: sc.calm, cls: "voice calm" }
     ];
-    if (Math.random() < 0.5) voices.reverse();
 
     const choice = await showCard(
       `<h2>${esc(sc.title)}</h2><p>${esc(sc.text)}</p><p class="muted" style="margin-top:10px">心裡響起兩個聲音——</p>`,
