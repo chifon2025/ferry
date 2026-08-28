@@ -96,6 +96,7 @@ html, body {
 #overlay {
   position: fixed;
   inset: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,6 +206,7 @@ html, body {
 #fog {
   position: fixed;
   inset: 0;
+  z-index: 20;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(244,239,230,0.6), rgba(244,239,230,1) 75%),
     var(--paper);
@@ -219,6 +221,7 @@ html, body {
 #dusk {
   position: fixed;
   inset: 0;
+  z-index: 10;
   background: #17140f;
   opacity: 0;
   pointer-events: none;
