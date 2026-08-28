@@ -54,6 +54,18 @@ html, body {
 #title { font-size: 22px; letter-spacing: 6px; opacity: 0.85; }
 #dateLabel { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
 
+/* 音／默 功能鍵：右上角，永遠可按（在卡片與霧之上） */
+#btnSound {
+  position: fixed;
+  top: calc(46px + env(safe-area-inset-top));
+  right: 14px;
+  z-index: 40;
+  min-width: 44px;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+#btnSound.muted { color: var(--ink-soft); background: transparent; }
+
 /* 底欄 */
 #idleBar {
   position: fixed;
