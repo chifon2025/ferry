@@ -1,7 +1,7 @@
 /* 《渡》離線快取。發布新版本時只需遞增 CACHE_VERSION。 */
 "use strict";
 
-const CACHE_VERSION = "du-ferry-v2";
+const CACHE_VERSION = "du-ferry-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
