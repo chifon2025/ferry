@@ -27,6 +27,9 @@
 
 根目錄即站點，GitHub Pages 直接指向 main 分支根目錄即可，無任何建置步驟。
 
+- GitHub 倉庫：https://github.com/chifon2025/ferry
+- 正式網站：https://chifon2025.github.io/ferry/
+
 ## 安裝成手機 App
 
 - iPhone／iPad：用 Safari 開啟 Pages 網址，點「分享」→「加入主畫面」

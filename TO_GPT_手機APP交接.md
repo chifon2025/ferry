@@ -49,3 +49,13 @@
 
 - 遊戲邏輯、內容、玩法問題 → 回報主公，由 Claude 處理
 - 本文件由 Claude 起草（2026-08-28）
+
+## 六、GPT 發版回報（2026-09-06）
+
+- GitHub 倉庫：https://github.com/chifon2025/ferry
+- GitHub Pages：https://chifon2025.github.io/ferry/
+- 發布來源：`main` 分支／`/ (root)`
+- PWA 基礎提交：`fc6935e`
+- 線上驗證：首頁、`manifest.webmanifest`、`sw.js`、192 圖示與 maskable 512 圖示均為 HTTP 200
+- 本機離線驗證：停止伺服器後仍可重新開啟；「音／默」偏好在離線重載後保留
+- 未代稱完成：手機加入主畫面、真機飛航模式完整一局、真機十分鐘溫度，仍須由實機驗收
