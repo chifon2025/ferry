@@ -447,43 +447,81 @@ async function choresPhase() {
   hideCard();
 }
 
-/* ---------- 靜坐片刻（30 秒，頁面離開就暫停） ---------- */
+/* ---------- 靜坐片刻（沉浸式：天地全暗、一息十秒半、河聲、可選入定聲） ---------- */
 async function meditate() {
   idleBar.classList.add("hidden");
   overlay.classList.remove("hidden");
+  overlay.classList.add("deep");
+
+  let bin = false;
+  try { bin = localStorage.getItem("du_ferry_binaural") === "1"; } catch (e) {}
+
   overlay.innerHTML =
-    `<div class="card"><div class="sit-wrap">` +
+    `<div class="deep-wrap">` +
     `<div class="pond">` +
     `<span class="ripple r1"></span><span class="ripple r2"></span><span class="ripple r3"></span>` +
     `<div class="core"></div>` +
     `<div class="breath-label"><span class="in">吸</span><span class="out">呼</span></div>` +
     `</div>` +
-    `<div class="sit-hint" id="sitHint">什麼都不用做。跟著水紋，呼吸。</div>` +
+    `<div class="sit-hint" id="sitHint">什麼都不用做。跟著水紋，慢慢呼吸。</div>` +
+    `<div class="deep-acts">` +
+    `<button class="btn small ghost" id="binToggle">入定聲${bin ? "・開" : ""}</button>` +
     `<button class="btn small ghost" id="sitQuit">先不坐了</button>` +
-    `</div></div>`;
+    `<button class="btn small hidden" id="sitGo">起身，開一局</button>` +
+    `</div>` +
+    `<div class="sit-note">入定聲要戴耳機——有人覺得更容易靜，聽聽看就好。</div>` +
+    `</div>`;
 
+  // 音場：河聲常開；入定聲照上回偏好
+  ZenAudio.startRiver();
+  if (bin) ZenAudio.startBinaural();
+
+  // 手機微震隨呼吸起點（一息 10.5 秒，可無感略過）
+  const buzz = setInterval(() => {
+    try { if (navigator.vibrate && !document.hidden) navigator.vibrate(15); } catch (e) {}
+  }, 10500);
+
+  $("binToggle").addEventListener("click", () => {
+    bin = !bin;
+    try { localStorage.setItem("du_ferry_binaural", bin ? "1" : "0"); } catch (e) {}
+    if (bin) ZenAudio.startBinaural(); else ZenAudio.stopBinaural();
+    $("binToggle").textContent = "入定聲" + (bin ? "・開" : "");
+  });
+
+  const cleanup = () => {
+    clearInterval(buzz);
+    ZenAudio.stopRiver();
+    ZenAudio.stopBinaural();
+    overlay.classList.remove("deep");
+  };
+
+  // 至少坐滿三十秒（頁面離開就暫停計時）；之後想坐多久都可以
   const need = 30000;
   let acc = 0;
   let last = performance.now();
-  let quit = false;
-  $("sitQuit").addEventListener("click", () => { quit = true; }, { once: true });
+  let action = null;
+  $("sitQuit").addEventListener("click", () => { action = "quit"; }, { once: true });
+  $("sitGo").addEventListener("click", () => { action = "go"; }, { once: true });
 
   await new Promise((resolve) => {
+    let ripe = false;
     const tick = setInterval(() => {
       const now = performance.now();
       if (!document.hidden) acc += now - last;
       last = now;
-      if (quit || acc >= need) { clearInterval(tick); resolve(); }
+      if (!ripe && acc >= need) {
+        ripe = true;
+        $("sitHint").textContent = "心，靜了一些。想坐多久，都可以。";
+        $("sitGo").classList.remove("hidden");
+      }
+      if (action) { clearInterval(tick); resolve(); }
     }, 250);
   });
 
-  if (quit) { hideCard(); enterIdle(); return; }
-
-  $("sitHint").textContent = "心，靜了一些。";
-  $("sitQuit").classList.add("hidden");
-  await wait(1400);
+  cleanup();
   hideCard();
-  runRound("extra");
+  if (action === "go") runRound("extra");
+  else enterIdle();
 }
 
 /* ---------- 渡我一下（30 秒緊急法：不算局，隨時的救生圈） ---------- */

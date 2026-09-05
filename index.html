@@ -163,7 +163,9 @@
 <script src="audio.js"></script>
 <script src="game.js"></script>
 <script>
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
+/* 本機開發不掛 SW（否則快取蓋掉熱改的檔案）；正式站照常註冊 */
+const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+if ("serviceWorker" in navigator && location.protocol !== "file:" && !IS_DEV) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch((error) => {
       console.warn("Service Worker 註冊失敗：", error);

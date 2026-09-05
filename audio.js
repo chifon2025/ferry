@@ -136,6 +136,69 @@ const ZenAudio = (() => {
     });
   }
 
+  /* ---- 沉浸靜坐音場 ---- */
+  let riverNodes = null;
+  let binauralNodes = null;
+
+  // 河聲：生成的褐噪音過低通，加極慢的水勢起伏（零音檔）
+  function startRiver() {
+    if (!enabled || riverNodes) return;
+    if (!ensureCtx()) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const len = ctx.sampleRate * 2;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.2;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 520; lp.Q.value = 0.4;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.12;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 0.014;
+    lfo.connect(lfoG); lfoG.connect(g.gain);
+    src.connect(lp); lp.connect(g); g.connect(sfxBus);
+    g.gain.setTargetAtTime(0.055, ctx.currentTime, 1.8);
+    src.start(); lfo.start();
+    riverNodes = { src, lfo, g };
+  }
+  function stopRiver() {
+    if (!riverNodes || !ctx) return;
+    const n = riverNodes; riverNodes = null;
+    n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.6);
+    setTimeout(() => { try { n.src.stop(); n.lfo.stop(); } catch (e) {} }, 1800);
+  }
+
+  // 入定聲：左右耳頻差 10Hz 的低鳴（戴耳機才有意義；不作任何療效宣稱）
+  function startBinaural() {
+    if (!enabled || binauralNodes) return;
+    if (!ensureCtx()) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const g = ctx.createGain(); g.gain.value = 0;
+    const mk = (freq, side) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq;
+      const p = ctx.createStereoPanner(); p.pan.value = side;
+      o.connect(p); p.connect(g); o.start();
+      return o;
+    };
+    const oL = mk(196, -1);
+    const oR = mk(206, 1);
+    g.connect(sfxBus);
+    g.gain.setTargetAtTime(0.022, ctx.currentTime, 1.5);
+    binauralNodes = { oL, oR, g };
+  }
+  function stopBinaural() {
+    if (!binauralNodes || !ctx) return;
+    const n = binauralNodes; binauralNodes = null;
+    n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
+    setTimeout(() => { try { n.oL.stop(); n.oR.stop(); } catch (e) {} }, 1500);
+  }
+
   /* ---- 點擊音效：輕木魚一聲 ---- */
   function tick() {
     if (!enabled) return;
@@ -190,7 +253,7 @@ const ZenAudio = (() => {
     });
   }
 
-  return { init, tick, toggle };
+  return { init, tick, toggle, startRiver, stopRiver, startBinaural, stopBinaural };
 })();
 
 document.addEventListener("DOMContentLoaded", ZenAudio.init);
