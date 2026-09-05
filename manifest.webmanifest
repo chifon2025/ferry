@@ -10,6 +10,15 @@
   "orientation": "portrait",
   "theme_color": "#f4efe6",
   "background_color": "#f4efe6",
+  "shortcuts": [
+    {
+      "name": "渡我一下",
+      "short_name": "渡我一下",
+      "description": "30 秒緊急法：交給真我、回歸平靜、做好當下、允許成真",
+      "url": "./?ferry=1",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

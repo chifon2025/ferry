@@ -20,7 +20,11 @@ function defaultState() {
     chain: null,           // 三日連環 {id, stage, calmHits, lastDate}
     nightSeed: null,       // 夜渡 {text, date}
     carryQuote: null,      // 今日隨身句 quote id
-    history: [],           // 長卷 {d, c:"calm"|"rush"|null, q:bool}
+    history: [],           // 長卷 {d, c:"calm"|"rush"|null, q:bool, g:bool}
+    lifeTrigger: null,     // 生活扳機 {when, line, setDate}
+    lastTriggerOfferRound: 0,
+    lastReviewRound: 0,    // 七日回望
+    pendingGold: false,    // 生活裡用上了句子，今日長卷落金點
     flags: {}
   };
 }
@@ -177,6 +181,30 @@ async function runRound(kind) {
       await wait(400);
     }
 
+    // 二之二、七日回望（每滿七局，回頭看一眼自己的河）
+    if (S.totalRounds >= 7 && S.totalRounds % 7 === 0 && S.lastReviewRound !== S.totalRounds) {
+      S.lastReviewRound = S.totalRounds;
+      save();
+      const last7 = S.history.slice(-7);
+      const calm = last7.filter((h) => h.c === "calm").length;
+      const rush = last7.filter((h) => h.c === "rush").length;
+      const hasQ = last7.some((h) => h.q);
+      const hasG = last7.some((h) => h.g);
+      let lines = [];
+      if (calm > rush) lines.push("這七日，河多半是平的。");
+      else if (calm === rush) lines.push("這七日，有平有波——都是河。");
+      else lines.push("這七日，浪多了些。浪，也是水。");
+      if (hasQ) lines.push("途中，拾得了句子。");
+      if (hasG) lines.push("更難得的是——有那麼一刻，你在生活裡，把句子說了出來。");
+      lines.push("你回來得，比從前快了。");
+      await showCard(
+        `<h2>七日回望</h2><p>${lines.join("\n")}</p>`,
+        [{ k: "ok", label: "繼續渡" }]
+      );
+      hideCard();
+      await wait(300);
+    }
+
     // 三、昨日種下的因——揭曉
     const due = S.seeds.filter((sd) => sd.date < today);
     S.seeds = S.seeds.filter((sd) => sd.date >= today);
@@ -243,6 +271,37 @@ async function runRound(kind) {
       hideCard();
       await wait(300);
       S.nightSeed = null;
+    }
+
+    // 三之四、扳機的回音（立過生活扳機，隔兩日輕輕問一次）
+    if (S.lifeTrigger && daysBetween(S.lifeTrigger.setDate, today) >= 2) {
+      const tg = S.lifeTrigger;
+      const k = await showCard(
+        `<h2>扳機的回音</h2><p class="muted">你立過一個扳機——</p>` +
+        `<p>「${esc(tg.when)}，先說：『${esc(tg.line)}』」</p>` +
+        `<p class="muted" style="margin-top:12px">那個時刻，來過了嗎？</p>`,
+        [
+          { k: "hit", cls: "voice calm", html: `<span class="who">來過</span>句子，出來了。` },
+          { k: "miss", cls: "voice rush", html: `<span class="who">來過</span>但當下忘了說。` },
+          { k: "wait", label: "那一刻還沒來" }
+        ]
+      );
+      hideCard();
+      await wait(300);
+      if (k === "hit") {
+        S.pendingGold = true;
+        S.lifeTrigger = null;
+        S.lastTriggerOfferRound = 0;   // 今晚可再立新的
+        await showCard(`<p>好。\n渡口，已經跟著你走出去了。\n今日的長卷，落一枚金點。</p>`, [{ k: "ok", label: "嗯" }]);
+      } else if (k === "miss") {
+        tg.setDate = today;
+        await showCard(`<p>沒關係。\n看見「忘了」，就是「記得」的開始。\n弦，再上一次。</p>`, [{ k: "ok", label: "好" }]);
+      } else {
+        tg.setDate = today;
+        await showCard(`<p>不急。扳機不趕時間。</p>`, [{ k: "ok", label: "好" }]);
+      }
+      hideCard();
+      await wait(300);
     }
     save();
 
@@ -352,6 +411,37 @@ async function runRound(kind) {
     hideCard();
   }
 
+  // 七之二、立一個生活的扳機（若Ｘ則Ｙ：讓句子綁上真實的時刻）
+  if (kind === "main" && !S.lifeTrigger && S.totalRounds >= 1 &&
+      S.totalRounds - S.lastTriggerOfferRound >= 3) {
+    S.lastTriggerOfferRound = S.totalRounds;
+    const carryQ = S.carryQuote ? QUOTES.find((x) => x.id === S.carryQuote) : null;
+    const line = carryQ ? carryQ.text : "別急，只看事實要怎麼處理。";
+    const pool = TRIGGERS.slice();
+    const opts = [];
+    while (opts.length < 3 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    const k = await showCard(
+      `<h2>立一個扳機</h2>` +
+      `<p class="muted">把一句話，綁上生活裡真實的一刻——下次它來，句子自己會跳出來。</p>` +
+      `<p style="margin-top:10px">「下次______，我先說：『${esc(line)}』」</p>`,
+      opts.map((w, i) => ({ k: "t" + i, cls: "voice calm", html: esc(w) }))
+        .concat([{ k: "skip", label: "這次先不立" }])
+    );
+    hideCard();
+    if (k !== "skip") {
+      const when = opts[Number(k.slice(1))];
+      S.lifeTrigger = { when, line, setDate: today };
+      save();
+      await wait(300);
+      await showCard(
+        `<p>立好了。\n「${esc(when)}，先說：『${esc(line)}』」\n過兩日，我再問你那一刻來過沒有。</p>`,
+        [{ k: "ok", label: "好" }]
+      );
+      hideCard();
+    }
+    await wait(300);
+  }
+
   // 八、吹燈收尾（可種一件自己的事進夜裡——夜渡）
   await wait(300);
   const closer = pick(CLOSERS);
@@ -373,7 +463,8 @@ async function runRound(kind) {
 
   S.totalRounds++;
   if (kind === "main") S.lastRoundDate = today;
-  S.history.push({ d: today, c: dayChoice, q: !!quoteDrop });
+  S.history.push({ d: today, c: dayChoice, q: !!quoteDrop, g: S.pendingGold });
+  S.pendingGold = false;
   if (S.history.length > 400) S.history = S.history.slice(-400);
   save();
 
@@ -592,6 +683,7 @@ async function showScroll() {
       else d += " q15,4 30,0";
       x += 30;
       if (h.q) marks += `<circle cx="${x - 15}" cy="38" r="3.4" fill="#b6512f"/>`;
+      if (h.g) marks += `<circle cx="${x - 15}" cy="24" r="4.2" fill="#c9a227"/>`;
     }
     body =
       `<div class="scroll-wrap"><svg width="${w + 40}" height="110" viewBox="0 0 ${w + 40} 110">` +
@@ -599,7 +691,7 @@ async function showScroll() {
       marks +
       `<text x="${x + 10}" y="65" font-size="13" fill="#5c554c">流</text>` +
       `</svg></div>` +
-      `<p class="muted">一天一段河：平緩是靜，折波是急，朱點是拾得的句子。</p>`;
+      `<p class="muted">一天一段河：平緩是靜，折波是急，朱點是拾得的句子，金點是你在生活裡把句子說出來的那一刻。</p>`;
   } else {
     body = `<p class="muted">河，還沒開始畫。\n開過局，這裡就會多一段。</p>`;
   }
@@ -619,6 +711,64 @@ function renderCarry() {
   }
 }
 
+/* ---------- 贈人：把句子畫成水墨圖卡，用手機原生分享送給真實的朋友 ---------- */
+async function shareQuote(q, btnEl) {
+  const W = 1080, H = 1080;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  // 宣紙
+  c.fillStyle = "#f4efe6"; c.fillRect(0, 0, W, H);
+  // 遠山淡墨
+  c.fillStyle = "rgba(74,81,88,0.10)";
+  c.beginPath(); c.moveTo(0, 800);
+  c.quadraticCurveTo(260, 660, 520, 770);
+  c.quadraticCurveTo(800, 870, 1080, 750);
+  c.lineTo(1080, 1080); c.lineTo(0, 1080); c.closePath(); c.fill();
+  // 水痕
+  c.strokeStyle = "rgba(63,74,82,0.18)"; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(160, 930); c.quadraticCurveTo(260, 916, 380, 930); c.stroke();
+  // 朱砂月
+  c.fillStyle = "rgba(182,81,47,0.25)";
+  c.beginPath(); c.arc(866, 206, 62, 0, 7); c.fill();
+  // 句子（自動換行、置中）
+  c.fillStyle = "#26221e";
+  c.font = '58px "Noto Serif TC", "PMingLiU", serif';
+  c.textAlign = "center";
+  const maxW = 780;
+  const lines = [];
+  let line = "";
+  for (const ch of q.text) {
+    line += ch;
+    if (c.measureText(line).width > maxW) { lines.push(line.slice(0, -1)); line = ch; }
+  }
+  if (line) lines.push(line);
+  const lh = 100;
+  const y0 = 470 - ((lines.length - 1) * lh) / 2;
+  lines.forEach((l, i) => c.fillText(l, W / 2, y0 + i * lh));
+  // 落款
+  c.fillStyle = "#5c554c"; c.font = '30px "Noto Serif TC", serif';
+  c.fillText("—— 順流成真 ——", W / 2, y0 + lines.length * lh + 40);
+  // 朱印
+  c.fillStyle = "#b6512f"; c.fillRect(936, 936, 92, 92);
+  c.fillStyle = "#f4efe6"; c.font = '62px "Noto Serif TC", serif';
+  c.fillText("渡", 982, 1002);
+
+  const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+  const shareText = q.text + "\n——《渡》 https://chifon2025.github.io/ferry/";
+  try {
+    const file = blob ? new File([blob], "du-quote.png", { type: "image/png" }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], text: q.text + "——《渡》" });
+    } else if (navigator.share) {
+      await navigator.share({ text: shareText });
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      if (btnEl) btnEl.textContent = "已抄下";
+    }
+  } catch (e) { /* 使用者取消分享，無妨 */ }
+}
+
 /* ---------- 字帖／信匣／設定 ---------- */
 async function showQuotes() {
   const owned = QUOTES.filter((q) => S.quotes.includes(q.id));
@@ -626,20 +776,29 @@ async function showQuotes() {
     overlay.classList.remove("hidden");
     const body = owned.length
       ? `<div class="scroll-list">` + owned.map((q) =>
-          `<div class="item"><button class="hang${S.carryQuote === q.id ? " on" : ""}" data-q="${q.id}">${S.carryQuote === q.id ? "已隨身" : "隨身"}</button>${esc(q.text)}${q.src === "補" ? ` <span class="src">（補）</span>` : ""}</div>`
-        ).join("") + `</div><p class="muted" style="margin-top:8px">點「隨身」，把一句掛在渡口，作今日的心錨。</p>`
+          `<div class="item">` +
+          `<button class="hang give" data-s="${q.id}">贈人</button>` +
+          `<button class="hang${S.carryQuote === q.id ? " on" : ""}" data-q="${q.id}">${S.carryQuote === q.id ? "已隨身" : "隨身"}</button>` +
+          `${esc(q.text)}${q.src === "補" ? ` <span class="src">（補）</span>` : ""}</div>`
+        ).join("") + `</div><p class="muted" style="margin-top:8px">「隨身」掛在渡口作心錨；「贈人」把句子送給一個真實的朋友。</p>`
       : `<p class="muted">還沒有拾得半句。\n句子不求，遇上了自然會來。</p>`;
     overlay.innerHTML = `<div class="card"><h2>字帖</h2>${body}<div class="acts"><button class="btn center" id="qClose">闔上</button></div></div>`;
-    overlay.querySelectorAll(".hang").forEach((el) => {
+    overlay.querySelectorAll(".hang[data-q]").forEach((el) => {
       el.addEventListener("click", () => {
         S.carryQuote = S.carryQuote === el.dataset.q ? null : el.dataset.q;
         save();
-        overlay.querySelectorAll(".hang").forEach((h) => {
+        overlay.querySelectorAll(".hang[data-q]").forEach((h) => {
           const on = S.carryQuote === h.dataset.q;
           h.classList.toggle("on", on);
           h.textContent = on ? "已隨身" : "隨身";
         });
         renderCarry();
+      });
+    });
+    overlay.querySelectorAll(".hang[data-s]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const q = QUOTES.find((x) => x.id === el.dataset.s);
+        if (q) shareQuote(q, el);
       });
     });
     $("qClose").addEventListener("click", resolve, { once: true });
@@ -713,6 +872,13 @@ async function boot(isReset) {
     await showCard(`<p>河會自己流。\n你只要做好今天的事。</p>`, [{ k: "ok", label: "上工" }]);
     hideCard();
     runRound("main");
+    return;
+  }
+
+  // 圖示捷徑「渡我一下」：長按 App 圖示直達 30 秒緊急法
+  if (new URLSearchParams(location.search).has("ferry")) {
+    history.replaceState(null, "", location.pathname);
+    ferryMe();
     return;
   }
 
