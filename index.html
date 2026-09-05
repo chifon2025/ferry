@@ -17,7 +17,7 @@
 <body>
 
 <!-- 水墨渡口場景 -->
-<svg id="scene" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<svg id="scene" viewBox="0 0 390 780" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
   <!-- 朱砂月 -->
   <circle id="moon" cx="308" cy="92" r="24" fill="#b6512f" opacity="0.26"/>
 
@@ -99,6 +99,14 @@
     <circle cx="9" cy="6" r="2.4" fill="#b6512f" opacity="0.8"/>
   </g>
 
+  <!-- 問渡的旅人（有事相求時，走上棧橋） -->
+  <g id="g-guest" class="hidden-part" transform="translate(206,560)">
+    <circle cx="0" cy="-31" r="5.5" fill="#1e1b18"/>
+    <path d="M-10,-34 q10,-8 20,0" stroke="#1e1b18" stroke-width="2.6" fill="none"/>
+    <path d="M-7,0 Q-5,-25 0,-25 Q5,-25 7,0 Z" fill="#1e1b18"/>
+    <line x1="10" y1="3" x2="10" y2="-38" stroke="#1e1b18" stroke-width="1.8"/>
+  </g>
+
   <!-- 貓（後期出現） -->
   <g id="g-cat" class="hidden-part" transform="translate(150,588)">
     <ellipse cx="0" cy="0" rx="11" ry="6.5" fill="#17140f"/>
@@ -137,6 +145,10 @@
 
 <!-- 今日隨身句 -->
 <div id="carry" class="hidden"></div>
+
+<!-- 場景即介面：今日事的提示與收工鈕 -->
+<div id="sceneHint" class="hidden"></div>
+<button id="sceneGo" class="btn hidden">今日事，畢</button>
 
 <!-- 閒時底欄 -->
 <nav id="idleBar" class="hidden">

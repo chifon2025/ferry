@@ -267,11 +267,8 @@ async function runRound(kind) {
       if (choice === "calm") { S.chain.calmHits++; S.calmCount++; notes = checkMilestones(); quoteDrop = maybeQuote(); }
       save();
       await wait(350);
-      await showCard(
-        `<p class="muted">你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。</p><p>這件事還沒完——尾聲，明日再看。</p>`,
-        [{ k: "ok", label: "好" }]
-      );
-      hideCard();
+      await showTalk(null, `你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。\n這件事還沒完——尾聲，明日再看。`, [{ k: "ok", label: "好" }]);
+      hideTalk();
       handled = true;
     } else { S.chain = null; }
   }
@@ -287,11 +284,8 @@ async function runRound(kind) {
       if (choice === "calm") { S.calmCount++; notes = checkMilestones(); quoteDrop = maybeQuote(); }
       save();
       await wait(350);
-      await showCard(
-        `<p class="muted">你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。</p><p>水還在流——這件事，明日還有下文。</p>`,
-        [{ k: "ok", label: "好" }]
-      );
-      hideCard();
+      await showTalk(null, `你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。\n水還在流——這件事，明日還有下文。`, [{ k: "ok", label: "好" }]);
+      hideTalk();
       handled = true;
     }
   }
@@ -302,23 +296,25 @@ async function runRound(kind) {
     if (rest.length) {
       const g = pick(rest);
       S.usedGuests.push(g.id);
+      // 旅人的身影，走上棧橋
+      $("g-guest").classList.add("shown");
+      await wait(1200);
       const owned = QUOTES.filter((q) => S.quotes.includes(q.id));
       const opts = [];
       const cp = owned.slice();
       while (opts.length < 3 && cp.length) opts.push(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]);
-      const chosen = await showCard(
-        `<h2>旅人問渡・${esc(g.who)}</h2><p>${esc(g.text)}</p><p class="muted" style="margin-top:10px">這回，換你當那個靜的聲音。送他字帖裡的哪一句？</p>`,
+      const chosen = await showTalk(
+        `旅人問渡・${g.who}`,
+        `${esc(g.text)}<div class="muted-line">這回，換你當那個靜的聲音。送他字帖裡的哪一句？</div>`,
         opts.map((q) => ({ k: q.id, cls: "voice calm", html: esc(q.text) }))
       );
-      hideCard();
+      hideTalk();
       S.seeds.push({ type: "guest", gid: g.id, qid: chosen, date: today });
       save();
       await wait(350);
-      await showCard(
-        `<p class="muted">他把那句話收進袖裡，上了船。</p><p>後來如何——等他捎信來。</p>`,
-        [{ k: "ok", label: "好" }]
-      );
-      hideCard();
+      await showTalk(null, `他把那句話收進袖裡，上了船。\n後來如何——等他捎信來。`, [{ k: "ok", label: "好" }]);
+      hideTalk();
+      $("g-guest").classList.remove("shown");
       handled = true;
     }
   }
@@ -333,11 +329,8 @@ async function runRound(kind) {
     if (choice === "calm") { S.calmCount++; notes = checkMilestones(); quoteDrop = maybeQuote(); }
     save();
     await wait(350);
-    await showCard(
-      `<p class="muted">你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。</p><p>結果如何——明日再看。</p>`,
-      [{ k: "ok", label: "好" }]
-    );
-    hideCard();
+    await showTalk(null, `你照著${choice === "calm" ? "靜" : "急"}的聲音，做了。\n結果如何——明日再看。`, [{ k: "ok", label: "好" }]);
+    hideTalk();
   }
 
   // 六、拾得金句
@@ -384,24 +377,53 @@ async function runRound(kind) {
   if (S.history.length > 400) S.history = S.history.slice(-400);
   save();
 
+  ZenAudio.toll();   // 吹燈，遠處一聲鐘
   dusk.classList.add("on");
   await wait(2600);
   dusk.classList.remove("on");
   enterIdle();
 }
 
-/* 亂流卡：急上、靜下，中間一句主公親擬的橋 */
+/* 事件入景：對話浮在河面（無卡框） */
+function showTalk(title, textHtml, buttons) {
+  return new Promise((resolve) => {
+    overlay.classList.remove("hidden");
+    overlay.classList.add("scene");
+    const acts = buttons.map((b) =>
+      b.div
+        ? `<div class="between">${b.html}</div>`
+        : `<button class="btn ${b.cls || "center"}" data-k="${b.k}">${b.html || esc(b.label)}</button>`
+    ).join("");
+    overlay.innerHTML =
+      `<div class="talk">` +
+      (title ? `<div class="talk-title">${esc(title)}</div>` : "") +
+      (textHtml ? `<div class="talk-text">${textHtml}</div>` : "") +
+      `<div class="acts">${acts}</div></div>`;
+    overlay.querySelectorAll("[data-k]").forEach((el) => {
+      el.addEventListener("click", () => resolve(el.dataset.k), { once: true });
+    });
+  });
+}
+function hideTalk() {
+  overlay.classList.remove("scene");
+  hideCard();
+}
+
+/* 亂流：河面躁動、對話入景；急上、靜下，中間一句主公親擬的橋 */
 async function voiceCard(title, text, rushLine, calmLine) {
+  document.body.classList.add("trouble");
   const btns = [
     { k: "rush", cls: "voice rush", html: `<span class="who">急的聲音</span>${esc(rushLine)}` },
     { div: true, html: "別急，只看事實要怎麼處理。" },
     { k: "calm", cls: "voice calm", html: `<span class="who">靜的聲音</span>${esc(calmLine)}` }
   ];
-  const choice = await showCard(
-    `<h2>${esc(title)}</h2><p>${esc(text)}</p><p class="muted" style="margin-top:10px">心裡響起兩個聲音——</p>`,
+  const choice = await showTalk(
+    title,
+    `${esc(text)}<div class="muted-line">心裡響起兩個聲音——</div>`,
     btns
   );
-  hideCard();
+  document.body.classList.remove("trouble");
+  hideTalk();
   return choice;
 }
 
@@ -416,35 +438,42 @@ function maybeQuote() {
   return q;
 }
 
-/* 今日事 */
+/* 今日事：場景即介面——小事就長在渡口上，點一點 */
+const SVGNS = "http://www.w3.org/2000/svg";
 async function choresPhase() {
   const chores = dailyChores();
-  const done = new Set();
-  await new Promise((resolve) => {
-    overlay.classList.remove("hidden");
-    const items = chores.map((c, i) =>
-      `<button class="btn chore" data-i="${i}"><span class="mark">未</span>${esc(c.name)}</button>`
-    ).join("");
-    overlay.innerHTML =
-      `<div class="card"><h2>今日事</h2>` +
-      `<p class="muted">不必全做。做一件，就是一件。</p>` +
-      `<div class="acts">${items}</div>` +
-      `<div class="chore-line" id="choreLine"></div>` +
-      `<div class="acts"><button class="btn center hidden" id="choreGo">今日事，畢</button></div></div>`;
-    overlay.querySelectorAll(".chore").forEach((el) => {
-      el.addEventListener("click", () => {
-        const i = Number(el.dataset.i);
-        if (done.has(i)) return;
-        done.add(i);
-        el.classList.add("done");
-        el.querySelector(".mark").textContent = "畢";
-        $("choreLine").textContent = chores[i].line;
-        $("choreGo").classList.remove("hidden");
-      });
+  const anchors = [[150, 596], [72, 664], [298, 646]];   // 棧橋、蘆葦岸、燈柱下
+  const hint = $("sceneHint");
+  const go = $("sceneGo");
+  hint.textContent = "今日事——渡口上有幾件小事，點一點。不必全做，做一件，就是一件。";
+  hint.classList.remove("hidden");
+
+  const layer = document.createElementNS(SVGNS, "g");
+  layer.setAttribute("id", "choreLayer");
+  chores.forEach((c, i) => {
+    const [x, y] = anchors[i] || anchors[0];
+    const g = document.createElementNS(SVGNS, "g");
+    g.setAttribute("class", "spot");
+    g.setAttribute("transform", `translate(${x},${y})`);
+    g.innerHTML =
+      `<circle class="spot-ring" r="9"></circle>` +
+      `<circle class="spot-dot" r="4.5"></circle>` +
+      `<text class="spot-name" x="13" y="5">${esc(c.name)}</text>`;
+    g.addEventListener("click", () => {
+      if (g.classList.contains("done")) return;
+      g.classList.add("done");
+      hint.textContent = c.line;
+      ZenAudio.tick();
+      go.classList.remove("hidden");
     });
-    $("choreGo").addEventListener("click", resolve, { once: true });
+    layer.appendChild(g);
   });
-  hideCard();
+  $("scene").appendChild(layer);
+
+  await new Promise((resolve) => go.addEventListener("click", resolve, { once: true }));
+  go.classList.add("hidden");
+  hint.classList.add("hidden");
+  layer.remove();
 }
 
 /* ---------- 靜坐片刻（沉浸式：天地全暗、一息十秒半、河聲、可選入定聲） ---------- */
@@ -472,8 +501,8 @@ async function meditate() {
     `<div class="sit-note">入定聲要戴耳機——有人覺得更容易靜，聽聽看就好。</div>` +
     `</div>`;
 
-  // 音場：河聲常開；入定聲照上回偏好
-  ZenAudio.startRiver();
+  // 音場：河聲漲上來；入定聲照上回偏好
+  ZenAudio.deepIn();
   if (bin) ZenAudio.startBinaural();
 
   // 手機微震隨呼吸起點（一息 10.5 秒，可無感略過）
@@ -490,7 +519,7 @@ async function meditate() {
 
   const cleanup = () => {
     clearInterval(buzz);
-    ZenAudio.stopRiver();
+    ZenAudio.deepOut();
     ZenAudio.stopBinaural();
     overlay.classList.remove("deep");
   };

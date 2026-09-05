@@ -136,15 +136,25 @@ const ZenAudio = (() => {
     });
   }
 
-  /* ---- 沉浸靜坐音場 ---- */
+  /* ---- 環境聲（全時）與沉浸靜坐音場 ---- */
   let riverNodes = null;
+  let rainNodes = null;
+  let cricketTimer = null;
   let binauralNodes = null;
+  let ambient = false;
+  const RIVER_AMBIENT = 0.028;   // 平時淡淡的
+  const RIVER_DEEP = 0.06;       // 靜坐時湧上來
 
   // 河聲：生成的褐噪音過低通，加極慢的水勢起伏（零音檔）
-  function startRiver() {
-    if (!enabled || riverNodes) return;
+  function startRiver(level) {
+    if (!enabled) return;
     if (!ensureCtx()) return;
     if (ctx.state === "suspended") ctx.resume();
+    const lv = level || RIVER_AMBIENT;
+    if (riverNodes) {   // 已在流，只調水勢
+      riverNodes.g.gain.setTargetAtTime(lv, ctx.currentTime, 1.2);
+      return;
+    }
     const len = ctx.sampleRate * 2;
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -160,10 +170,10 @@ const ZenAudio = (() => {
     lp.type = "lowpass"; lp.frequency.value = 520; lp.Q.value = 0.4;
     const g = ctx.createGain(); g.gain.value = 0;
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.12;
-    const lfoG = ctx.createGain(); lfoG.gain.value = 0.014;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 0.012;
     lfo.connect(lfoG); lfoG.connect(g.gain);
     src.connect(lp); lp.connect(g); g.connect(sfxBus);
-    g.gain.setTargetAtTime(0.055, ctx.currentTime, 1.8);
+    g.gain.setTargetAtTime(lv, ctx.currentTime, 1.8);
     src.start(); lfo.start();
     riverNodes = { src, lfo, g };
   }
@@ -172,6 +182,97 @@ const ZenAudio = (() => {
     const n = riverNodes; riverNodes = null;
     n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.6);
     setTimeout(() => { try { n.src.stop(); n.lfo.stop(); } catch (e) {} }, 1800);
+  }
+
+  // 雨聲：白噪音過帶通，沙沙的
+  function startRainSound() {
+    if (!enabled || rainNodes) return;
+    if (!ensureCtx()) return;
+    const len = ctx.sampleRate * 2;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1100;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 5200;
+    const g = ctx.createGain(); g.gain.value = 0;
+    src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(sfxBus);
+    g.gain.setTargetAtTime(0.014, ctx.currentTime, 2);
+    src.start();
+    rainNodes = { src, g };
+  }
+  function stopRainSound() {
+    if (!rainNodes || !ctx) return;
+    const n = rainNodes; rainNodes = null;
+    n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.6);
+    setTimeout(() => { try { n.src.stop(); } catch (e) {} }, 1800);
+  }
+
+  // 夜蟲：稀疏的高頻短鳴
+  function chirp() {
+    if (!ctx || document.hidden) return;
+    const t = ctx.currentTime;
+    for (let k = 0; k < 3; k++) {
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.value = 4200 + Math.random() * 300;
+      const g = ctx.createGain();
+      const t0 = t + k * 0.09;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.005, t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0003, t0 + 0.07);
+      o.connect(g); g.connect(sfxBus);
+      o.start(t0); o.stop(t0 + 0.09);
+    }
+  }
+  function startCrickets() {
+    if (!enabled || cricketTimer) return;
+    if (!ensureCtx()) return;
+    cricketTimer = setInterval(() => {
+      if (Math.random() < 0.6) chirp();
+    }, 1600);
+  }
+  function stopCrickets() {
+    if (cricketTimer) { clearInterval(cricketTimer); cricketTimer = null; }
+  }
+
+  // 依當下天象開環境聲（首次手勢後）
+  function ensureAmbience() {
+    if (!enabled || ambient) return;
+    if (!ensureCtx()) return;
+    ambient = true;
+    startRiver(RIVER_AMBIENT);
+    if (document.body.dataset.weather === "rain") startRainSound();
+    if (document.body.dataset.tod === "night") startCrickets();
+  }
+  function stopAmbience() {
+    ambient = false;
+    stopRiver(); stopRainSound(); stopCrickets();
+  }
+
+  // 靜坐進出：水聲漲、退
+  function deepIn() { startRiver(RIVER_DEEP); }
+  function deepOut() {
+    if (ambient) startRiver(RIVER_AMBIENT);
+    else stopRiver();
+  }
+
+  // 遠鐘一聲（吹燈用）
+  function toll() {
+    if (!enabled) return;
+    if (!ensureCtx()) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const t = ctx.currentTime;
+    [[1, 0.035], [2.756, 0.012]].forEach(([ratio, amp]) => {
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.value = 146.83 * ratio;
+      const g = ctx.createGain();
+      o.connect(g); g.connect(sfxBus);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(amp, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0003, t + 5);
+      o.start(t); o.stop(t + 5.2);
+    });
   }
 
   // 入定聲：左右耳頻差 10Hz 的低鳴（戴耳機才有意義；不作任何療效宣稱）
@@ -228,8 +329,8 @@ const ZenAudio = (() => {
     enabled = !enabled;
     try { localStorage.setItem(PREF_KEY, enabled ? "1" : "0"); } catch (e) {}
     updateBtn();
-    if (enabled) startMusic();   // 點擊本身就是手勢，瀏覽器允許出聲
-    else stopMusic();
+    if (enabled) { startMusic(); ensureAmbience(); }   // 點擊本身就是手勢，瀏覽器允許出聲
+    else { stopMusic(); stopAmbience(); stopBinaural(); }
   }
 
   function init() {
@@ -237,11 +338,12 @@ const ZenAudio = (() => {
     const b = document.getElementById("btnSound");
     if (b) b.addEventListener("click", (e) => { e.stopPropagation(); toggle(); if (enabled) tick(); });
 
-    // 任何按鈕點擊：木魚一聲；且首次手勢順勢把配樂帶起來
+    // 任何按鈕點擊：木魚一聲；且首次手勢順勢把配樂與環境聲帶起來
     document.addEventListener("click", (e) => {
       if (!e.target.closest("button")) return;
       if (e.target.closest("#btnSound")) return;
       if (enabled && !playing) startMusic();
+      if (enabled && !ambient) ensureAmbience();
       tick();
     }, true);
 
@@ -253,7 +355,7 @@ const ZenAudio = (() => {
     });
   }
 
-  return { init, tick, toggle, startRiver, stopRiver, startBinaural, stopBinaural };
+  return { init, tick, toggle, deepIn, deepOut, ensureAmbience, startBinaural, stopBinaural, toll };
 })();
 
 document.addEventListener("DOMContentLoaded", ZenAudio.init);

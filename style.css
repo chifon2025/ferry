@@ -270,6 +270,59 @@ body[data-weather="rain"] #rain { display: block; }
   line-height: 1.9;
 }
 
+/* 事件入景：對話浮在河面，無卡框 */
+#overlay.scene {
+  background: transparent;
+  align-items: flex-end;
+  padding-bottom: calc(26px + env(safe-area-inset-bottom));
+}
+.talk {
+  width: 100%;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rise 0.5s ease;
+}
+.talk-title {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--ink);
+  text-align: center;
+  text-shadow: 0 0 8px rgba(244, 239, 230, 0.9);
+}
+.talk-text {
+  font-size: 15.5px;
+  line-height: 1.9;
+  color: var(--ink);
+  background: rgba(250, 246, 238, 0.85);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 16px rgba(38, 34, 30, 0.10);
+  white-space: pre-line;
+}
+.talk .acts { display: flex; flex-direction: column; gap: 10px; }
+.talk .btn {
+  text-align: left;
+  background: rgba(250, 246, 238, 0.88);
+  border: none;
+  box-shadow: 0 2px 12px rgba(38, 34, 30, 0.10);
+}
+.talk .between {
+  text-shadow: 0 0 8px rgba(244, 239, 230, 0.95);
+  color: var(--ink);
+  opacity: 0.75;
+}
+.talk .muted-line {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* 亂流時：河面躁動、舟晃得快 */
+body.trouble .bob { animation-duration: 3.2s; }
+body.trouble #g-water path { opacity: 0.3; }
+
 /* 卡片層 */
 #overlay {
   position: fixed;
@@ -356,24 +409,58 @@ body[data-weather="rain"] #rain { display: block; }
 .scroll-list .item:last-child { border-bottom: none; }
 .scroll-list .src { color: var(--ink-soft); font-size: 12px; }
 
-/* 今日事 */
-.chore {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+/* 今日事：場景即介面——直接點渡口裡的東西 */
+.spot { cursor: pointer; }
+.spot-ring {
+  fill: none;
+  stroke: #f4efe6;
+  stroke-width: 1.2;
+  opacity: 0.6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spotPulse 2.4s ease-out infinite;
 }
-.chore .mark { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
-.chore.done { background: #efe8da; border-color: transparent; }
-.chore.done .mark { color: var(--cinnabar); }
-.chore-line {
-  min-height: 26px;
-  margin-top: 12px;
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  line-height: 1.7;
+@keyframes spotPulse {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  70% { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+.spot-dot { fill: #f4efe6; opacity: 0.85; }
+.spot-name {
+  font-size: 13px;
+  fill: #f4efe6;
+  opacity: 0.92;
+  letter-spacing: 2px;
+  paint-order: stroke;
+  stroke: rgba(23, 20, 15, 0.55);
+  stroke-width: 3px;
+}
+.spot.done .spot-dot { fill: var(--cinnabar); }
+.spot.done .spot-ring { animation: none; opacity: 0; }
+.spot.done .spot-name { opacity: 0.5; }
+
+#sceneHint {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  z-index: 5;
   text-align: center;
+  font-size: 14px;
+  color: #efe8da;
+  letter-spacing: 1.5px;
+  line-height: 1.8;
+  padding: 0 34px;
+  text-shadow: 0 1px 8px rgba(23, 20, 15, 0.75);
+  pointer-events: none;
 }
+#sceneGo {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  z-index: 5;
+}
+#sceneGo:active { transform: translateX(-50%) scale(0.97); }
 
 /* 靜坐：墨核隨呼吸脹縮，水紋一圈圈漾開（8 秒一息：吸 → 呼） */
 .sit-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 6px 0; }
@@ -500,7 +587,7 @@ body[data-weather="rain"] #rain { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .bob, .core, .ripple, .breath-label .in, .breath-label .out,
-  #g-reeds, #g-water, #g-clouds, #g-birds, #rain { animation: none; }
+  #g-reeds, #g-water, #g-clouds, #g-birds, #rain, .spot-ring { animation: none; }
   #g-birds { opacity: 0; }
   .core { transform: scale(1); }
   .breath-label .in { opacity: 0.95; }
