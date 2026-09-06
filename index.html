@@ -145,8 +145,22 @@
 <div id="mist"></div>
 <div id="rain"></div>
 
-<!-- 音／默 功能鍵（隨時可按，卡片之上） -->
-<button id="btnSound" class="btn small">音</button>
+<!-- 右上功能鍵：比照「主公我來了」，在故事途中也能操作 -->
+<button id="btnMenu" class="btn small" aria-haspopup="dialog" aria-controls="functionPanel" aria-expanded="false">⚙ 功能</button>
+
+<div id="functionPanel" class="hidden" role="dialog" aria-modal="true" aria-labelledby="functionTitle">
+  <section class="function-sheet">
+    <header class="function-head">
+      <div><span class="practice-seal">渡口</span><h2 id="functionTitle">功能</h2></div>
+      <button id="functionClose" class="function-close" aria-label="關閉功能面板">✕</button>
+    </header>
+    <div class="function-body">
+      <button id="btnSound" class="function-option"></button>
+      <button id="btnMenuInstall" class="function-option"></button>
+    </div>
+    <p class="function-note">遊戲進度會自動保存在這台裝置。</p>
+  </section>
+</div>
 
 <!-- 今日隨身句 -->
 <div id="carry" class="hidden"></div>

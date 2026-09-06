@@ -74,9 +74,12 @@ test('service worker caches complete shell, preserves other apps and waits for o
 function appHarness(raw, failWrites=false, userAgent='') {
   const key='du_ferry_save_v1', data=new Map(raw==null?[]:[[key,raw]]), nodes=new Map(), handlers=new Map(), events={};
   function element(id) {
-    if(!nodes.has(id))nodes.set(id,{id,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){}},focus(){},remove(){nodes.delete(id);},addEventListener(){},querySelectorAll(){
+    if(!nodes.has(id)){
+      const classes=new Set(id==='functionPanel'?['hidden']:[]),attributes={};
+      nodes.set(id,{id,innerHTML:'',textContent:'',dataset:{},attributes,classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,force){const on=force===undefined?!classes.has(c):force;if(on)classes.add(c);else classes.delete(c);return on;}},setAttribute:(k,v)=>attributes[k]=v,focus(){},remove(){nodes.delete(id);},addEventListener:(event,fn)=>handlers.set(id+':'+event,fn),querySelectorAll(){
       return [...this.innerHTML.matchAll(/data-do="([^"]+)"/g)].map(match=>({dataset:{do:match[1]},addEventListener:(event,fn)=>handlers.set(match[1],fn)}));
-    }});
+      }});
+    }
     return nodes.get(id);
   }
   const document={body:{dataset:{tod:'day'},appendChild(node){nodes.set(node.id,node);}},hidden:false,getElementById:id=>id==='saveWarning'&&!nodes.has(id)?null:element(id),createElement:()=>({setAttribute(){}}),addEventListener:(event,fn)=>events[event]=fn};
@@ -103,27 +106,36 @@ test('cross-tab write conflict stops before replacing newer progress',async()=>{
   h.data.set(h.key,newer);await h.handlers.get('start')();
   assert.equal(h.data.get(h.key),newer);assert.ok(h.nodes.get('saveWarning').textContent.includes('另一個分頁'));
 });
-test('home exposes install entry and Chromium prompt is handled from that button',async()=>{
+test('function panel owns install entry and Chromium prompt is handled from it',async()=>{
   const h=appHarness(null);let prevented=false,calls=0;
-  assert.ok(h.nodes.get('overlay').innerHTML.includes('安裝成 App'));
+  assert.equal(h.nodes.get('overlay').innerHTML.includes('data-do="install"'),false);
+  assert.ok(h.nodes.get('btnMenuInstall').innerHTML.includes('安裝手機 App'));
   h.events.beforeinstallprompt({preventDefault(){prevented=true;},prompt:async()=>{calls++;return {outcome:'accepted'};}});
-  h.handlers.get('install')();
+  h.handlers.get('btnMenuInstall:click')();
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(prevented,true);assert.equal(calls,1);
   assert.ok(h.nodes.get('overlay').innerHTML.includes('安裝完成'));
 });
 test('installed event replaces install call-to-action with installed state',()=>{
   const h=appHarness(null);h.events.appinstalled();
-  assert.ok(h.nodes.get('overlay').innerHTML.includes('已安裝成 App'));
+  assert.ok(h.nodes.get('btnMenuInstall').innerHTML.includes('App 已安裝'));
+  h.context.window.FerryPractice.installApp();
+  assert.ok(h.nodes.get('overlay').innerHTML.includes('《渡》已安裝'));
 });
 test('iPhone and Android receive platform-specific installation guidance',()=>{
   const iphone=appHarness(null,false,'Mozilla/5.0 (iPhone) AppleWebKit Safari');
-  iphone.handlers.get('install')();
+  iphone.context.window.FerryPractice.installApp();
   assert.ok(iphone.nodes.get('overlay').innerHTML.includes('iPhone 安裝方式'));
   assert.ok(iphone.nodes.get('overlay').innerHTML.includes('加入主畫面'));
   assert.ok(iphone.nodes.get('overlay').innerHTML.includes('以網頁 App 打開'));
   const android=appHarness(null,false,'Mozilla/5.0 (Linux; Android 15) Chrome');
-  android.handlers.get('install')();
+  android.context.window.FerryPractice.installApp();
   assert.ok(android.nodes.get('overlay').innerHTML.includes('Android 安裝方式'));
   assert.ok(android.nodes.get('overlay').innerHTML.includes('安裝應用程式'));
+});
+test('function key opens one panel, close and backdrop restore it',()=>{
+  const h=appHarness(null),panel=h.nodes.get('functionPanel'),menu=h.nodes.get('btnMenu');
+  h.handlers.get('btnMenu:click')();assert.equal(panel.classList.contains('hidden'),false);assert.equal(menu.attributes['aria-expanded'],'true');
+  h.handlers.get('functionClose:click')();assert.equal(panel.classList.contains('hidden'),true);assert.equal(menu.attributes['aria-expanded'],'false');
+  h.handlers.get('btnMenu:click')();h.handlers.get('functionPanel:click')({target:{id:'functionPanel'}});assert.equal(panel.classList.contains('hidden'),true);
 });

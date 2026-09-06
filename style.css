@@ -138,23 +138,23 @@ body[data-weather="rain"] #rain { display: block; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: calc(14px + env(safe-area-inset-top)) 20px 0;
+  padding: calc(14px + env(safe-area-inset-top)) 116px 0 20px;
   pointer-events: none;
 }
 #title { font-size: 22px; letter-spacing: 6px; opacity: 0.85; }
 #dateLabel { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
 
-/* 音／默 功能鍵：右上角，永遠可按（在卡片與霧之上） */
-#btnSound {
+/* 功能鍵：右上角，永遠可按（在卡片與霧之上） */
+#btnMenu {
   position: fixed;
-  top: calc(46px + env(safe-area-inset-top));
+  top: calc(8px + env(safe-area-inset-top));
   right: 14px;
   z-index: 40;
-  min-width: 44px;
-  letter-spacing: 0;
+  min-width: 88px;
+  min-height: 44px;
+  letter-spacing: 2px;
   opacity: 0.85;
 }
-#btnSound.muted { color: var(--ink-soft); background: transparent; }
 
 /* 底欄 */
 #idleBar {

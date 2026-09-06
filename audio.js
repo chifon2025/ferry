@@ -320,8 +320,8 @@ const ZenAudio = (() => {
   function updateBtn() {
     const b = document.getElementById("btnSound");
     if (!b) return;
-    b.textContent = enabled ? "音" : "默";
-    b.setAttribute("aria-label", enabled ? "聲音：開（點擊轉靜默）" : "聲音：關（點擊開聲）");
+    b.innerHTML = `<span class="function-icon">♫</span><span><b>音樂音效</b><small>${enabled ? "目前開啟，點此轉為靜音" : "目前靜音，點此開啟聲音"}</small></span><strong>${enabled ? "ON" : "OFF"}</strong>`;
+    b.setAttribute("aria-label", enabled ? "音樂音效目前開啟，點擊轉為靜音" : "音樂音效目前關閉，點擊開啟");
     b.classList.toggle("muted", !enabled);
   }
 
