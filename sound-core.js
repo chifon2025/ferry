@@ -5,6 +5,9 @@
   // Quiet source calibration also applies to existing saved mixer levels.
   const WATER_LEVEL=.10,WIND_LEVEL=.025;
   const motifs=[[0,2,4,2,1],[0,1,2,4,2],[4,2,1,0]],scale=[293.665,329.628,391.995,440,523.251];
+  // Small lookup tables keep first-touch synthesis inexpensive on phones.
+  const wave=Float32Array.from({length:4096},(_,i)=>Math.sin(i*Math.PI*2/4096));
+  const grainEnv=Float32Array.from({length:1024},(_,i)=>{const u=i/1023;return (1-Math.exp(-u*35))*Math.exp(-u*6)*(1-u);});
   function settings(raw){
     let data;try{data=typeof raw==='string'?JSON.parse(raw):raw;}catch(_){data=null;}
     const value={...defaults};if(data&&typeof data==='object'){
@@ -12,6 +15,31 @@
     }return value;
   }
   function enabled(raw){return !['0','off','false'].includes(String(raw).toLowerCase());}
+  // Small overlapping rivulets, not a continuous brown-noise waterfall.
+  // Pre-render once; two different loop lengths avoid a short repeating pattern.
+  function streamData(rate,seconds,seed){
+    let state=seed>>>0;const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+    const n=Math.round(rate*seconds),data=new Float32Array(n);
+    for(let cluster=0;cluster<seconds;cluster+=.055+random()*.19){
+      const count=2+Math.floor(random()*4),clusterGain=.55+random()*.45;
+      for(let j=0;j<count;j++){
+        const start=Math.floor((cluster+random()*.15)*rate)%n,duration=.025+random()*.10,length=Math.ceil(duration*rate);
+        const frequency=650+random()*1550,sweep=.3+random()*.6,amp=(.075+random()*.11)*clusterGain;
+        let phase=random(),previous=0;
+        for(let i=0;i<length;i++){
+          const u=i/length,envelope=grainEnv[Math.floor(u*1023)];
+          phase+=frequency*(1+sweep*u)/rate;phase-=Math.floor(phase);
+          const white=random()*2-1,soft=(white+previous)*.5;previous=white;
+          // A brief damped bubble within a soft splash, not a pitched UI chime.
+          const index=Math.floor(phase*4096);
+          data[(start+i)%n]+=amp*envelope*(.65*wave[index]+.12*wave[(index*2)&4095]+.38*soft);
+        }
+      }
+    }
+    // Remove any DC; overlapping wrapped grains keep the loop seam continuous.
+    let mean=0;for(const v of data)mean+=v;mean/=n;for(let i=0;i<n;i++)data[i]-=mean;
+    return data;
+  }
   function create(ctx){
     const master=ctx.createGain(),music=ctx.createGain(),ambience=ctx.createGain(),effects=ctx.createGain();
     master.gain.value=0;master.connect(ctx.destination);for(const bus of [music,ambience,effects])bus.connect(master);
@@ -36,7 +64,14 @@
       lfo.frequency.value=speed;depth.gain.value=level*.22;lfo.connect(depth);depth.connect(gain.gain);source.connect(filter);filter.connect(gain);gain.connect(bus);
       source.start();lfo.start();sources.push(source,lfo);
     }
-    function startAmbience(){if(running)return;running=true;continuous(550,.55,.09,water,7);continuous(1050,.10,.17,water,5);continuous(1200,.12,.055,wind,9);}
+    function streamLoop(seconds,seed,level){
+      const rate=24000; // The creek is low-passed at 2.8 kHz; avoid full-rate mobile synthesis/memory cost.
+      const source=ctx.createBufferSource(),buffer=ctx.createBuffer(1,rate*seconds,rate),hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter(),g=ctx.createGain();
+      buffer.copyToChannel(streamData(rate,seconds,seed),0);source.buffer=buffer;source.loop=true;
+      hp.type='highpass';hp.frequency.value=420;hp.Q.value=.45;lp.type='lowpass';lp.frequency.value=2800;lp.Q.value=.45;g.gain.value=level;
+      source.connect(hp);hp.connect(lp);lp.connect(g);g.connect(water);source.start();sources.push(source);
+    }
+    function startAmbience(){if(running)return;running=true;streamLoop(19,173,2);streamLoop(29,947,1.2);continuous(1200,.12,.055,wind,9);}
     function cleanup(source,nodes){active.add(source);source.onended=()=>{active.delete(source);for(const node of [source,...nodes])try{node.disconnect();}catch(_){}};}
     function tone(f,t,duration,volume,bus=effects,type='sine',endFrequency=null){
       const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,t+duration);
@@ -71,5 +106,5 @@
     function dispose(){binaural(false);for(const s of [...sources,...active]){try{s.stop();s.disconnect();}catch(_){}}master.disconnect();active.clear();}
     return {mix,scene,startAmbience,phrase,effect,creak,binaural,dispose,levels:()=>({master:master.gain.value,music:music.gain.value,ambience:ambience.gain.value,effects:effects.gain.value,scene:currentScene,active:active.size})};
   }
-  return {settings,enabled,defaults,motifs,create};
+  return {settings,enabled,defaults,motifs,streamData,create};
 });
