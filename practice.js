@@ -2,7 +2,11 @@
 "use strict";
 window.FerryPractice = (() => {
   const C = FerryCore;
-  let lastRaw = null, blocked = false, view = "home";
+  let lastRaw = null, blocked = false, view = "home", installPrompt = null;
+  let installed = window.matchMedia?.("(display-mode: standalone)")?.matches === true || navigator.standalone === true;
+  const agent = navigator.userAgent || "";
+  const isiPhone = /iPhone|iPad|iPod/i.test(agent);
+  const isAndroid = /Android/i.test(agent);
   const phrases = ["先看見，再決定。", "可以在意，也可以不急著下結論。", "說清楚能做的，也是一種照顧。", "做好這一步，不拿結果評斷自己。"];
   const paragraph = text => `<p>${esc(text)}</p>`;
   const button = (id, title, sub = "", primary = false) => `<button class="practice-button${primary ? " primary" : ""}" data-do="${id}"><span>${esc(title)}</span>${sub ? `<small>${esc(sub)}</small>` : ""}</button>`;
@@ -34,6 +38,13 @@ window.FerryPractice = (() => {
     } catch (_) {error("這一步尚未儲存，進度沒有往前。請確認瀏覽器允許儲存、空間足夠，再試一次。也可先匯出備份。"); return false;}
   }
   function storyOf() {return PRACTICE_STORIES.find(x => x.id === S.dailyPractice.active?.story);}
+  function installControl() {
+    if (installed) return button("install", "已安裝成 App", "現在可從手機主畫面直接開啟。");
+    if (installPrompt) return button("install", "安裝成手機 App", "輕觸後，由瀏覽器完成安裝。", true);
+    if (isiPhone) return button("install", "安裝成手機 App", "iPhone：Safari 分享 → 加入主畫面。");
+    if (isAndroid) return button("install", "安裝成手機 App", "Android：可直接安裝，或依畫面步驟操作。");
+    return button("install", "安裝成 App", "查看這台裝置的安裝步驟。");
+  }
   function home() {
     view = "home"; applySky(); renderWorld();
     $("dateLabel").textContent = ({dawn:"晨光初起",day:"日光在岸",dusk:"暮色漸近",night:"一盞夜渡"})[document.body.dataset.tod];
@@ -44,7 +55,7 @@ window.FerryPractice = (() => {
     let content = `<div class="practice-lead">來渡口，歇一歇。<br>看清眼前，做一小步。</div><p class="practice-intro">一段水墨日常，約莫三分鐘。<br>不用答對，也不必先讓自己平靜。</p>`;
     if (p.anchor) content += `<blockquote>${esc(p.anchor)}</blockquote>`;
     if (p.pending.length) content += `<p class="practice-note">有一段後續留在河上。隔日再來，信匣會接住它。</p>`;
-    const controls = [active ? button("resume","接著走",storyOf()?.title || "未完的故事",true) : ready ? button("start","走進今日故事",next.title,true) : button("replays","回想一段故事","今天可以到這裡，也可以再看看別的走法。",true), button("help","渡我一下","把此刻帶回生活，不計進度。"), `<div class="practice-grid">${button("mail",unread ? "信匣 · 有信" : "信匣")}${button("life","留給生活")}${button("quotes","字帖")}${button("archive","回望長卷")}</div>`, button("about","關於渡 · 安裝到手機")];
+    const controls = [active ? button("resume","接著走",storyOf()?.title || "未完的故事",true) : ready ? button("start","走進今日故事",next.title,true) : button("replays","回想一段故事","今天可以到這裡，也可以再看看別的走法。",true), installControl(), button("help","渡我一下","把此刻帶回生活，不計進度。"), `<div class="practice-grid">${button("mail",unread ? "信匣 · 有信" : "信匣")}${button("life","留給生活")}${button("quotes","字帖")}${button("archive","回望長卷")}</div>`, button("about","關於渡")];
     if (ready && !active) controls.splice(2,0,button("replays","自由回想","三段故事都可試玩，不影響今日進度。"));
     if (S.chain && S.chain.lastDate < todayStr()) controls.splice(2,0,button("legacy","接續舊日故事","保留原版未完的篇章。"));
     paint("不趕路，也能往前", "渡", content, controls, false);
@@ -125,8 +136,39 @@ window.FerryPractice = (() => {
   }
   function about() {
     view="about";
-    paint("一個可以帶回日常的小遊戲","把渡口放在身邊",`<p>《渡》以相信真我、回歸平靜、做好當下、允許成真為創作方向。你仍能在不平靜時照顧自己、做出選擇；遊戲不保證願望實現。</p><h2>任何人都能玩</h2><p>免帳號、免下載，分享這個網址就能開始。首次完整載入並完成離線準備後，可離線遊玩。</p><h2>安裝到手機</h2><p>iPhone：用 Safari 開啟，從分享選单選「加入主畫面」。<br>Android：用 Chrome 開啟，從選單選「安裝應用程式」或「加到主畫面」。不同版本名稱可能略有不同。</p><h2>你的紀錄留在這裡</h2><p>沒有伺服器存檔，不會在裝置間同步；換瀏覽器、清除網站資料或無痕視窗結束，可能失去進度。公開的是遊戲，不是你的生活紀錄。網站主機仍可能保有一般連線紀錄。</p><p class="practice-note" id="offlineStatus">${"serviceWorker" in navigator && navigator.serviceWorker.controller ? "離線版本已接管此頁。" : "首次造訪請保持連線，離線版本準備好後會在這裡顯示。"}</p><p>這是日常覺察的原創遊戲，不是治療，也不是課程原文。需要協助時，可以找信任的人或合適的專業人員。</p>`,[button("share","分享遊戲網址"),button("export","匯出這台裝置的存檔備份")]);
+    paint("一個可以帶回日常的小遊戲","把渡口放在身邊",`<p>《渡》以相信真我、回歸平靜、做好當下、允許成真為創作方向。你仍能在不平靜時照顧自己、做出選擇；遊戲不保證願望實現。</p><h2>任何人都能玩</h2><p>免帳號、免商店下載，分享這個網址就能開始。安裝後會有主畫面圖示，並以獨立 App 視窗開啟。</p><h2>安裝到手機</h2><p>使用首頁的「安裝成手機 App」。支援直接安裝的瀏覽器會顯示系統安裝視窗；iPhone 則會顯示 Safari 的正確步驟。</p><h2>離線遊玩</h2><p>第一次請保持連線，等離線版本準備完成後，再關閉所有《渡》分頁或 App 視窗並重開。之後沒有網路也能進入遊戲。</p><h2>你的紀錄留在這裡</h2><p>沒有伺服器存檔，不會在裝置間同步；換瀏覽器、清除網站資料或無痕視窗結束，可能失去進度。公開的是遊戲，不是你的生活紀錄。網站主機仍可能保有一般連線紀錄。</p><p class="practice-note" id="offlineStatus">${"serviceWorker" in navigator && navigator.serviceWorker.controller ? "離線版本已接管此頁。" : "首次造訪請保持連線，離線版本準備好後會在這裡顯示。"}</p><p>這是日常覺察的原創遊戲，不是治療，也不是課程原文。需要協助時，可以找信任的人或合適的專業人員。</p>`,[installControl(),button("share","分享遊戲網址"),button("export","匯出這台裝置的存檔備份")]);
     if("serviceWorker" in navigator) navigator.serviceWorker.ready.then(()=>{if(view==="about"&&$("offlineStatus")) $("offlineStatus").textContent="離線版本已準備好。更新會在關閉所有渡口分頁、下次開啟時接手。";});
+  }
+  async function installApp() {
+    if (installed) {
+      paint("已經在主畫面上", "《渡》已安裝", paragraph("現在可以像其他 App 一樣，從手機主畫面的「渡」圖示開啟。遊戲進度仍只保存在這台裝置的這個 App 裡。"), [button("home","回到渡口","",true)]);
+      return;
+    }
+    if (installPrompt) {
+      const prompt = installPrompt;
+      installPrompt = null;
+      try {
+        const directChoice = await prompt.prompt();
+        const choice = directChoice?.outcome ? directChoice : await prompt.userChoice;
+        if (choice?.outcome === "accepted") {
+          installed = true;
+          paint("已放到裝置上", "安裝完成", paragraph("主畫面上現在有「渡」的圖示。以後可以直接點它，像 App 一樣開啟。"), [button("home","回到渡口","",true)]);
+        } else {
+          paint("隨時都能再安裝", "這次沒有安裝", paragraph("遊戲仍可在瀏覽器繼續玩。若想安裝，重新進入「安裝成手機 App」，或使用瀏覽器選單的安裝功能。"), [button("home","回到渡口","",true)]);
+        }
+      } catch (_) {
+        installGuide();
+      }
+      return;
+    }
+    installGuide();
+  }
+  function installGuide() {
+    view="install";
+    const ios = `<ol class="install-steps"><li>用 <strong>Safari</strong> 開啟《渡》的公開網址。</li><li>點工具列的「分享」圖示；若使用新版配置，也可能要先點「更多」，再選「分享」。</li><li>往下找到並點「加入主畫面」。若沒看到，先點最下方「編輯動作」加入它。</li><li>開啟「以網頁 App 打開」，再點右上角「加入」。</li></ol>`;
+    const android = `<ol class="install-steps"><li>建議用 <strong>Chrome</strong> 開啟《渡》的公開網址。</li><li>點右上角選單。</li><li>選「安裝應用程式」；部分版本會顯示「加到主畫面」。</li><li>確認安裝，回到主畫面點「渡」即可開啟。</li></ol>`;
+    const desktop = `<p>若要安裝到手機，請先在手機開啟這個網址。Android 建議使用 Chrome；iPhone 請使用 Safari。</p><p>電腦版 Chrome 或 Edge 通常可從網址列右側的安裝圖示，或瀏覽器選單安裝。</p>`;
+    paint("安裝後不占用商店帳號", isiPhone ? "iPhone 安裝方式" : isAndroid ? "Android 安裝方式" : "安裝《渡》", isiPhone ? ios : isAndroid ? android : desktop, [button("share","把網址傳到手機"),button("home","回到渡口","",true)]);
   }
   function legacy() {
     const ch=S.chain, source=CHAINS.find(x=>x.id===ch?.id);
@@ -140,6 +182,7 @@ window.FerryPractice = (() => {
   async function dispatch(key) {
     if(key==="home")return home();
     if(key==="about")return about();
+    if(key==="install")return installApp();
     if(key==="export") {
       let raw;try{raw=localStorage.getItem(SAVE_KEY)||lastRaw||JSON.stringify(S);}catch(_){raw=lastRaw||JSON.stringify(S);}
       const url=URL.createObjectURL(new Blob([raw],{type:"application/json"})), a=document.createElement("a");a.href=url;a.download="渡-本機存檔.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
@@ -193,6 +236,15 @@ window.FerryPractice = (() => {
   }
   document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!blocked&&view==="home"){if(commit(C.settle(S,todayStr())))home();}});
   window.addEventListener("storage",event=>{if(event.key===SAVE_KEY){blocked=true;error("另一個分頁更新了進度。此頁已暫停寫入，請重新整理接續。");}});
+  window.addEventListener("beforeinstallprompt",event=>{
+    event.preventDefault();
+    installPrompt=event;
+    if(view==="home")home(); else if(view==="about")about();
+  });
+  window.addEventListener("appinstalled",()=>{
+    installPrompt=null; installed=true;
+    if(view==="home")home(); else if(view==="about"||view==="install")about();
+  });
   return {home,init};
 })();
 FerryPractice.init();

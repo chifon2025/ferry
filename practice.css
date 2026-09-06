@@ -31,6 +31,8 @@
 .practice-field input,.practice-field textarea {display:block;width:100%;padding:13px;border:1px solid #b4a48d;border-radius:4px;margin-top:8px;color:#30271f;background:#fffaf0;font:inherit;font-size:16px;line-height:1.8;user-select:text;}
 .practice-answers {display:grid;gap:8px;}
 .practice-river {display:flex;flex-wrap:wrap;gap:6px;color:#8a8278;}
+.install-steps {margin:0 0 22px 22px;padding:0;}
+.install-steps li {font-size:16px;line-height:1.9;margin:0 0 12px;padding-left:5px;}
 #saveWarning {position:fixed;bottom:max(8px,env(safe-area-inset-bottom));left:12px;right:12px;z-index:100;background:#4e3025;color:#fff6e7;border-radius:8px;padding:14px 18px;font:14px/1.6 sans-serif;box-shadow:0 3px 18px #0003;}
 .practice-nojs {position:fixed;inset:25% 15%;z-index:100;background:#faf6ee;padding:30px;font:18px/2 serif;}
 @media(min-width:1000px){#overlay.practice-overlay {justify-content:flex-end;padding-right:12vw;}#scene{width:65%;} .practice-panel{margin:auto 0;}}

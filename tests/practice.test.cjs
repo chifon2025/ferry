@@ -71,7 +71,7 @@ test('service worker caches complete shell, preserves other apps and waits for o
   let responded=false;listeners.fetch({request:{method:'GET',url:'https://example.com/qiyuan/game.js'},respondWith:()=>responded=true});assert.equal(responded,false);
 });
 
-function appHarness(raw, failWrites=false) {
+function appHarness(raw, failWrites=false, userAgent='') {
   const key='du_ferry_save_v1', data=new Map(raw==null?[]:[[key,raw]]), nodes=new Map(), handlers=new Map(), events={};
   function element(id) {
     if(!nodes.has(id))nodes.set(id,{id,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){}},focus(){},remove(){nodes.delete(id);},addEventListener(){},querySelectorAll(){
@@ -80,7 +80,7 @@ function appHarness(raw, failWrites=false) {
     return nodes.get(id);
   }
   const document={body:{dataset:{tod:'day'},appendChild(node){nodes.set(node.id,node);}},hidden:false,getElementById:id=>id==='saveWarning'&&!nodes.has(id)?null:element(id),createElement:()=>({setAttribute(){}}),addEventListener:(event,fn)=>events[event]=fn};
-  const context={console,FerryCore:C,PRACTICE_STORIES:stories,QUOTES:[],GUESTS:[],SCENARIOS:[],CHAINS:[],SAVE_KEY:key,S:{},document,URLSearchParams,location:{search:''},navigator:{},setTimeout,defaultState:()=>({seeds:[],quotes:[],letters:[],history:[],flags:{}}),todayStr:()=> '2026-09-06',applySky(){},renderWorld(){},esc:s=>String(s),$:element,overlay:element('overlay'),idleBar:element('idleBar'),localStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>{if(failWrites)throw Error('quota');data.set(k,v);}},window:{addEventListener:(event,fn)=>events[event]=fn}};
+  const context={console,FerryCore:C,PRACTICE_STORIES:stories,QUOTES:[],GUESTS:[],SCENARIOS:[],CHAINS:[],SAVE_KEY:key,S:{},document,URLSearchParams,location:{search:''},navigator:{userAgent},setTimeout,defaultState:()=>({seeds:[],quotes:[],letters:[],history:[],flags:{}}),todayStr:()=> '2026-09-06',applySky(){},renderWorld(){},esc:s=>String(s),$:element,overlay:element('overlay'),idleBar:element('idleBar'),localStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>{if(failWrites)throw Error('quota');data.set(k,v);}},window:{addEventListener:(event,fn)=>events[event]=fn}};
   context.window.FerryPractice=undefined;
   Object.defineProperty(context,'FerryPractice',{get:()=>context.window.FerryPractice});
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../practice.js'),'utf8'),context);
@@ -102,4 +102,28 @@ test('cross-tab write conflict stops before replacing newer progress',async()=>{
   const h=appHarness(JSON.stringify(old)),newer=JSON.stringify({...old,totalRounds:20});
   h.data.set(h.key,newer);await h.handlers.get('start')();
   assert.equal(h.data.get(h.key),newer);assert.ok(h.nodes.get('saveWarning').textContent.includes('另一個分頁'));
+});
+test('home exposes install entry and Chromium prompt is handled from that button',async()=>{
+  const h=appHarness(null);let prevented=false,calls=0;
+  assert.ok(h.nodes.get('overlay').innerHTML.includes('安裝成 App'));
+  h.events.beforeinstallprompt({preventDefault(){prevented=true;},prompt:async()=>{calls++;return {outcome:'accepted'};}});
+  h.handlers.get('install')();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(prevented,true);assert.equal(calls,1);
+  assert.ok(h.nodes.get('overlay').innerHTML.includes('安裝完成'));
+});
+test('installed event replaces install call-to-action with installed state',()=>{
+  const h=appHarness(null);h.events.appinstalled();
+  assert.ok(h.nodes.get('overlay').innerHTML.includes('已安裝成 App'));
+});
+test('iPhone and Android receive platform-specific installation guidance',()=>{
+  const iphone=appHarness(null,false,'Mozilla/5.0 (iPhone) AppleWebKit Safari');
+  iphone.handlers.get('install')();
+  assert.ok(iphone.nodes.get('overlay').innerHTML.includes('iPhone 安裝方式'));
+  assert.ok(iphone.nodes.get('overlay').innerHTML.includes('加入主畫面'));
+  assert.ok(iphone.nodes.get('overlay').innerHTML.includes('以網頁 App 打開'));
+  const android=appHarness(null,false,'Mozilla/5.0 (Linux; Android 15) Chrome');
+  android.handlers.get('install')();
+  assert.ok(android.nodes.get('overlay').innerHTML.includes('Android 安裝方式'));
+  assert.ok(android.nodes.get('overlay').innerHTML.includes('安裝應用程式'));
 });
