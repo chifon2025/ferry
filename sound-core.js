@@ -2,6 +2,8 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FerrySound=api;})(typeof globalThis!=='undefined'?globalThis:this,()=>{
   'use strict';
   const defaults={music:.45,ambience:.7,effects:.6,riverOnly:false};
+  // Quiet source calibration also applies to existing saved mixer levels.
+  const WATER_LEVEL=.10,WIND_LEVEL=.025;
   const motifs=[[0,2,4,2,1],[0,1,2,4,2],[4,2,1,0]],scale=[293.665,329.628,391.995,440,523.251];
   function settings(raw){
     let data;try{data=typeof raw==='string'?JSON.parse(raw):raw;}catch(_){data=null;}
@@ -13,12 +15,12 @@
   function create(ctx){
     const master=ctx.createGain(),music=ctx.createGain(),ambience=ctx.createGain(),effects=ctx.createGain();
     master.gain.value=0;master.connect(ctx.destination);for(const bus of [music,ambience,effects])bus.connect(master);
-    const water=ctx.createGain(),wind=ctx.createGain();water.connect(ambience);wind.connect(ambience);water.gain.value=.55;wind.gain.value=.16;
+    const water=ctx.createGain(),wind=ctx.createGain();water.connect(ambience);wind.connect(ambience);water.gain.value=WATER_LEVEL;wind.gain.value=WIND_LEVEL;
     const sources=[],active=new Set(),buffers=new Map();let running=false,currentScene='home',prefs={...defaults},on=true,binauralNodes=null;
     function ramp(param,value,time=.25){const t=ctx.currentTime;if(param.cancelAndHoldAtTime)param.cancelAndHoldAtTime(t);else {const old=param.value;param.cancelScheduledValues(t);param.setValueAtTime(old,t);}param.setTargetAtTime(value,t,time);}
     function mix(value,isOn=true){prefs=settings(value);on=isOn;const quiet=['shore','note','done'].includes(currentScene);
       ramp(master.gain,on?.8:0,.1);ramp(music.gain,prefs.riverOnly?0:prefs.music*(quiet?.035:currentScene==='see'?.38:.75),quiet?1.3:.7);
-      ramp(ambience.gain,prefs.ambience,.5);ramp(effects.gain,prefs.riverOnly?0:prefs.effects,.1);ramp(wind.gain,prefs.riverOnly?0:.16,.6);
+      ramp(ambience.gain,prefs.ambience,.5);ramp(effects.gain,prefs.riverOnly?0:prefs.effects,.1);ramp(wind.gain,prefs.riverOnly?0:WIND_LEVEL,.6);
     }
     function scene(name){currentScene=name;mix(prefs,on);}
     function noise(seconds=4){
@@ -34,7 +36,7 @@
       lfo.frequency.value=speed;depth.gain.value=level*.22;lfo.connect(depth);depth.connect(gain.gain);source.connect(filter);filter.connect(gain);gain.connect(bus);
       source.start();lfo.start();sources.push(source,lfo);
     }
-    function startAmbience(){if(running)return;running=true;continuous(650,.55,.09,water,7);continuous(1400,.22,.17,water,5);continuous(1800,.2,.055,wind,9);}
+    function startAmbience(){if(running)return;running=true;continuous(550,.55,.09,water,7);continuous(1050,.10,.17,water,5);continuous(1200,.12,.055,wind,9);}
     function cleanup(source,nodes){active.add(source);source.onended=()=>{active.delete(source);for(const node of [source,...nodes])try{node.disconnect();}catch(_){}};}
     function tone(f,t,duration,volume,bus=effects,type='sine',endFrequency=null){
       const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,t+duration);

@@ -52,6 +52,7 @@ const server=http.createServer((req,res)=>{const f=new URL(req.url,'http://local
   });
   for(const s of signals){assert.ok(s.peak<.95);if(s.kind==='muted')assert.equal(s.peak,0);else assert.ok(s.rms>.000001);}
   assert.ok(signals.find(s=>s.kind==='shore').rms<signals.find(s=>s.kind==='music').rms*.5);
+  assert.ok(signals.find(s=>s.kind==='river').rms<signals.find(s=>s.kind==='music').rms,'continuous water/wind must remain below the musical phrase at equal mixer levels');
   console.log('PASS rendered audio is finite, audible, below clipping; mute is silent; shore music recedes',JSON.stringify(signals));
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(r=>server.close(r));}
