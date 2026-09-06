@@ -2,7 +2,7 @@
   "id": "./",
   "name": "渡",
   "short_name": "渡",
-  "description": "一天一局、約三分鐘的水墨渡口小遊戲。",
+  "description": "看清眼前，做一小步。免帳號的水墨日常遊戲。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
@@ -14,7 +14,7 @@
     {
       "name": "渡我一下",
       "short_name": "渡我一下",
-      "description": "30 秒緊急法：交給真我、回歸平靜、做好當下、允許成真",
+      "description": "不需倒數：看清眼前，選一個做得到的小動作",
       "url": "./?ferry=1",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }

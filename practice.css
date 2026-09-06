@@ -1,0 +1,38 @@
+/* 水墨場景保持可見；互動放在可捲動、可縮放的紙頁上。 */
+#overlay.practice-overlay {align-items:flex-start;background:linear-gradient(90deg,transparent,rgba(244,239,230,.35));padding:78px 24px 32px;overscroll-behavior:contain;}
+.practice-panel {width:min(100%,480px);margin:auto 0;padding:30px 32px 22px;background:rgba(250,246,238,.97);border:1px solid rgba(92,85,76,.2);border-radius:3px 24px 3px 24px;box-shadow:0 12px 60px #26221e14;user-select:text;}
+.practice-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;letter-spacing:1.5px;color:#685d50;margin-bottom:22px;}
+.practice-seal {color:#9f4028;border:1px solid #b6512f70;padding:5px 8px;white-space:nowrap;}
+.practice-back {border:0;background:none;font:inherit;color:#62564b;cursor:pointer;min-height:44px;padding:0 10px 0 0;white-space:nowrap;}
+.practice-panel h1 {font-size:27px;line-height:1.55;font-weight:500;letter-spacing:2px;margin:0 0 22px;}
+.practice-panel h1:focus {outline:none;}
+.practice-panel h2 {font-size:17px;line-height:1.7;font-weight:500;margin:16px 0 8px;}
+.practice-panel p {font-size:16px;line-height:1.95;white-space:pre-line;margin:0 0 18px;overflow-wrap:anywhere;}
+.practice-lead {font-size:24px;line-height:1.9;letter-spacing:2px;margin-bottom:18px;}
+.practice-panel .practice-intro {font-size:14px;color:#6b5d4e;}
+.practice-panel .practice-note {font-size:13px;color:#6c6052;line-height:1.8;}
+.practice-panel blockquote {margin:10px 0 22px;padding:10px 0 10px 16px;border-left:2px solid #b6512f8c;font-size:17px;line-height:1.9;color:#68533f;}
+.practice-actions {display:flex;flex-direction:column;gap:10px;margin-top:24px;}
+.practice-button {display:block;width:100%;min-height:48px;padding:13px 16px;text-align:left;border:1px solid #81715d45;border-radius:4px;background:#fffaf080;color:#30271f;font:inherit;font-size:15px;line-height:1.65;cursor:pointer;transition:background .15s;}
+.practice-button small {display:block;color:#746451;font-size:12px;line-height:1.8;margin-top:5px;}
+.practice-button.primary {background:#99472f;color:#fff9ed;border-color:#99472f;}
+.practice-button.primary small {color:#fae2d0;}
+.practice-button:hover {background:#eae0d0;}
+.practice-button.primary:hover {background:#843d29;}
+.practice-button:focus-visible,.practice-back:focus-visible {outline:3px solid #ae583c;outline-offset:3px;}
+.practice-grid {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.practice-grid .practice-button {text-align:center;}
+.practice-panel .practice-foot {font-size:11px;letter-spacing:1px;color:#82725e;text-align:center;margin:25px 0 0;}
+.practice-clues section {border-bottom:1px solid #b4a48d55;padding:8px 0;}
+.practice-clues section p {padding:12px 12px 0;font-size:14px;}
+.practice-letter {border-bottom:1px solid #b4a48d55;padding:12px 0 20px;margin-bottom:16px;}
+.practice-letter>span {font-size:12px;color:#756451;}
+.practice-field {display:block;font-size:13px;color:#675744;margin:18px 0;}
+.practice-field input,.practice-field textarea {display:block;width:100%;padding:13px;border:1px solid #b4a48d;border-radius:4px;margin-top:8px;color:#30271f;background:#fffaf0;font:inherit;font-size:16px;line-height:1.8;user-select:text;}
+.practice-answers {display:grid;gap:8px;}
+.practice-river {display:flex;flex-wrap:wrap;gap:6px;color:#8a8278;}
+#saveWarning {position:fixed;bottom:max(8px,env(safe-area-inset-bottom));left:12px;right:12px;z-index:100;background:#4e3025;color:#fff6e7;border-radius:8px;padding:14px 18px;font:14px/1.6 sans-serif;box-shadow:0 3px 18px #0003;}
+.practice-nojs {position:fixed;inset:25% 15%;z-index:100;background:#faf6ee;padding:30px;font:18px/2 serif;}
+@media(min-width:1000px){#overlay.practice-overlay {justify-content:flex-end;padding-right:12vw;}#scene{width:65%;} .practice-panel{margin:auto 0;}}
+@media(max-width:520px){#overlay.practice-overlay{padding:68px 14px calc(22px + env(safe-area-inset-bottom));}.practice-panel{padding:23px 22px 20px;}.practice-panel h1{font-size:24px;}.practice-lead{font-size:22px;} .practice-heading{letter-spacing:.7px;font-size:10px;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}

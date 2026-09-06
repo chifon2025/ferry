@@ -2,17 +2,22 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f4efe6">
 <meta name="description" content="《渡》——一天一局的水墨渡口。相信真我，回歸平靜，做好當下，允許成真。">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="渡">
-<title>渡</title>
+<title>渡｜把一小步帶回生活</title>
+<meta property="og:title" content="渡｜把一小步帶回生活">
+<meta property="og:description" content="免費水墨日常遊戲。看清眼前，做一小步。不用答對，也不必先讓自己平靜。">
+<meta property="og:url" content="https://chifon2025.github.io/ferry/">
+<meta property="og:type" content="website">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="practice.css">
 </head>
 <body>
 
@@ -174,12 +179,16 @@
 <script src="data.js"></script>
 <script src="audio.js"></script>
 <script src="game.js"></script>
+<script src="practice-data.js"></script>
+<script src="practice-core.js"></script>
+<script src="practice.js"></script>
+<noscript><div class="practice-nojs">《渡》需要啟用 JavaScript 才能遊玩。這是免帳號的靜態遊戲，存檔只保留在你的瀏覽器。</div></noscript>
 <script>
-/* 本機開發不掛 SW（否則快取蓋掉熱改的檔案）；正式站照常註冊 */
+/* 本機預設不掛 SW；離線驗證可明確使用 ?offline-test=1。 */
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-if ("serviceWorker" in navigator && location.protocol !== "file:" && !IS_DEV) {
+if ("serviceWorker" in navigator && location.protocol !== "file:" && (!IS_DEV || new URLSearchParams(location.search).has("offline-test"))) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((error) => {
+    navigator.serviceWorker.register("./sw.js", {updateViaCache:"none"}).catch((error) => {
       console.warn("Service Worker 註冊失敗：", error);
     });
   });

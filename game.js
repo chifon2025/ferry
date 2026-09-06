@@ -843,6 +843,7 @@ async function showSettings() {
 
 /* ---------- 閒時 ---------- */
 function enterIdle() {
+  if (window.FerryPractice) return window.FerryPractice.home();
   hideCard();
   idleBar.classList.remove("hidden");
   const played = S.lastRoundDate === todayStr();
@@ -889,14 +890,4 @@ async function boot(isReset) {
   }
 }
 
-$("btnRound").addEventListener("click", () => {
-  if (S.lastRoundDate === todayStr()) meditate();
-  else runRound("main");
-});
-$("btnQuotes").addEventListener("click", () => { idleBar.classList.add("hidden"); showQuotes(); });
-$("btnMail").addEventListener("click", () => { idleBar.classList.add("hidden"); showMail(); });
-$("btnScroll").addEventListener("click", () => { idleBar.classList.add("hidden"); showScroll(); });
-$("btnSet").addEventListener("click", () => { idleBar.classList.add("hidden"); showSettings(); });
-$("btnHelp").addEventListener("click", () => { ferryMe(); });
-
-boot(false);
+// 日常體悟版由 practice.js 啟動。舊函式保留供歷史資料相容，不啟動評分迴圈。
