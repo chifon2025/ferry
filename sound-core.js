@@ -47,7 +47,7 @@
     const sources=[],active=new Set(),buffers=new Map();let running=false,currentScene='home',prefs={...defaults},on=true,binauralNodes=null;
     function ramp(param,value,time=.25){const t=ctx.currentTime;if(param.cancelAndHoldAtTime)param.cancelAndHoldAtTime(t);else {const old=param.value;param.cancelScheduledValues(t);param.setValueAtTime(old,t);}param.setTargetAtTime(value,t,time);}
     function mix(value,isOn=true){prefs=settings(value);on=isOn;const quiet=['shore','note','done'].includes(currentScene);
-      ramp(master.gain,on?.8:0,.1);ramp(music.gain,prefs.riverOnly?0:prefs.music*(quiet?.035:currentScene==='see'?.38:.75),quiet?1.3:.7);
+      ramp(master.gain,on&&!prefs.riverOnly?.8:0,.1);ramp(music.gain,prefs.riverOnly?0:prefs.music*(quiet?.035:currentScene==='see'?.38:.75),quiet?1.3:.7);
       ramp(ambience.gain,prefs.ambience,.5);ramp(effects.gain,prefs.riverOnly?0:prefs.effects,.1);ramp(wind.gain,prefs.riverOnly?0:WIND_LEVEL,.6);
     }
     function scene(name){currentScene=name;mix(prefs,on);}
@@ -71,7 +71,8 @@
       hp.type='highpass';hp.frequency.value=420;hp.Q.value=.45;lp.type='lowpass';lp.frequency.value=2800;lp.Q.value=.45;g.gain.value=level;
       source.connect(hp);hp.connect(lp);lp.connect(g);g.connect(water);source.start();sources.push(source);
     }
-    function startAmbience(){if(running)return;running=true;streamLoop(19,173,2);streamLoop(29,947,1.2);continuous(1200,.12,.055,wind,9);}
+    // Water ambience is disabled at the source, including for existing saved presets.
+    function startAmbience(){if(running)return;running=true;continuous(1200,.12,.055,wind,9);}
     function cleanup(source,nodes){active.add(source);source.onended=()=>{active.delete(source);for(const node of [source,...nodes])try{node.disconnect();}catch(_){}};}
     function tone(f,t,duration,volume,bus=effects,type='sine',endFrequency=null){
       const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(endFrequency)o.frequency.exponentialRampToValueAtTime(endFrequency,t+duration);

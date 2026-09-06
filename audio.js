@@ -9,7 +9,7 @@ const ZenAudio=(()=>{
   function persist(master=false){try{
     const raw=JSON.stringify(prefs);localStorage.setItem(MIX,raw);if(localStorage.getItem(MIX)!==raw)throw Error('readback');
     if(master){localStorage.setItem(MASTER,enabled?'1':'0');if(localStorage.getItem(MASTER)!==(enabled?'1':'0'))throw Error('readback');}
-    status(enabled?'聲音設定已記住。':'目前全部靜音，音量設定仍保留。');
+    status(enabled?(prefs.riverOnly?'安靜模式：目前不播放聲音。':'聲音設定已記住，持續水聲已關閉。'):'目前全部靜音，音量設定仍保留。');
   }catch(_){status('本次調整已生效，但無法記住；重新開啟後可能恢復原設定。');}}
   function ui(){
     const b=$('btnSound');if(b){b.innerHTML='<span class="function-icon">♫</span><span><b>音樂音效</b><small>'+(enabled?'聲音已開啟，點此全部靜音':'目前全部靜音，點此開啟')+'</small></span><strong>'+(enabled?'開':'靜')+'</strong>';b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'全部聲音已開啟，點此靜音':'全部聲音已靜音，點此開啟');}

@@ -42,15 +42,16 @@ const server=http.createServer((req,res)=>{const f=new URL(req.url,'http://local
   await context.setOffline(true);await page.reload();await page.locator('#btnMenu').click();await page.waitForFunction(()=>__contexts[0]?.state==='running');
   console.log('PASS mobile controls, legacy mute, independent levels, river-only, reload, scene effects, background suspend, offline audio');
   const signals=await page.evaluate(async()=>{
-   async function render(kind){const c=new OfflineAudioContext(1,44100*8,44100),p=FerrySound.create(c);p.mix({music:1,ambience:1,effects:1,riverOnly:false},kind!=='muted');
+   async function render(kind){const c=new OfflineAudioContext(1,44100*8,44100),p=FerrySound.create(c);p.mix({music:1,ambience:1,effects:1,riverOnly:kind==='quiet'},kind!=='muted');
+    if(kind==='quiet')p.startAmbience();
     if(['full','muted','river'].includes(kind)){p.startAmbience();if(kind!=='river'){p.phrase(0,1);p.effect('tea',2);p.effect('release',3);}}
     else if(kind==='shore'){p.scene('shore');p.phrase(0,1);}
     else if(kind==='music')p.phrase(0,1);
     else p.effect(kind,1);
     const b=await c.startRendering(),d=b.getChannelData(0);let peak=0,sum=0;for(const v of d){if(!Number.isFinite(v))throw Error('nonfinite');peak=Math.max(peak,Math.abs(v));sum+=v*v;}p.dispose();return {kind,peak,rms:Math.sqrt(sum/d.length)};
-   }const out=[];for(const k of ['full','muted','river','music','shore','touch','mail','paper','tea','release','sit','greeting'])out.push(await render(k));return out;
+   }const out=[];for(const k of ['full','muted','quiet','river','music','shore','touch','mail','paper','tea','release','sit','greeting'])out.push(await render(k));return out;
   });
-  for(const s of signals){assert.ok(s.peak<.95);if(s.kind==='muted')assert.equal(s.peak,0);else assert.ok(s.rms>.000001);}
+  for(const s of signals){assert.ok(s.peak<.95);if(['muted','quiet'].includes(s.kind))assert.equal(s.peak,0);else assert.ok(s.rms>.000001);}
   assert.ok(signals.find(s=>s.kind==='shore').rms<signals.find(s=>s.kind==='music').rms*.5);
   assert.ok(signals.find(s=>s.kind==='river').rms<signals.find(s=>s.kind==='music').rms,'continuous water/wind must remain below the musical phrase at equal mixer levels');
   console.log('PASS rendered audio is finite, audible, below clipping; mute is silent; shore music recedes',JSON.stringify(signals));

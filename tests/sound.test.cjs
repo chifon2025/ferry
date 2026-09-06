@@ -1,4 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),S=require('../sound-core.js');
+test('ambient startup does not create any water loops',()=>{const fs=require('node:fs');const source=fs.readFileSync(require('node:path').join(__dirname,'../sound-core.js'),'utf8');const body=source.match(/function startAmbience\(\)\{([^}]+)\}/)[1];assert.equal(body.includes('streamLoop'),false);assert.equal(body.includes('water'),false);assert.ok(body.includes('wind'));});
 test('legacy mute representations remain muted; default remains enabled',()=>{for(const value of ['0','off','false','OFF'])assert.equal(S.enabled(value),false);for(const value of [null,'1','on'])assert.equal(S.enabled(value),true);});
 test('independent levels clamp, corrupt or unknown preferences fall back safely',()=>{
   assert.deepEqual(S.settings('broken'),S.defaults);assert.deepEqual(S.settings({music:NaN,ambience:Infinity,effects:'loud'}),S.defaults);
