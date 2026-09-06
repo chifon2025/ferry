@@ -7,7 +7,7 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp
 const server=http.createServer((req,res)=>{
   const file=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
   if(file.includes('..')){res.writeHead(403);res.end();return;}
-  try{let data=fs.readFileSync(path.join(root,file));if(file==='sw.js')data=Buffer.from(data.toString().replace('daily-v5',version));res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});res.end(data);}catch(_){res.writeHead(404);res.end();}
+  try{let data=fs.readFileSync(path.join(root,file));if(file==='sw.js')data=Buffer.from(data.toString().replace(/daily-v\d+/,version));res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});res.end(data);}catch(_){res.writeHead(404);res.end();}
 });
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));

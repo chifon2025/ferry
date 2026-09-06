@@ -157,6 +157,14 @@
     </header>
     <div class="function-body">
       <button id="btnSound" class="function-option"></button>
+      <details id="soundSettings" class="sound-settings">
+        <summary>調整聲音 · 只聽河聲</summary>
+        <div class="sound-presets"><button id="soundNormal" aria-pressed="true">水岸與琴音</button><button id="soundRiverOnly" aria-pressed="false">只聽河聲</button></div>
+        <label for="sound-music">配樂<input id="sound-music" type="range" min="0" max="100" value="45"></label>
+        <label for="sound-ambience">環境聲<input id="sound-ambience" type="range" min="0" max="100" value="70"></label>
+        <label for="sound-effects">操作音效<input id="sound-effects" type="range" min="0" max="100" value="60"></label>
+        <p id="soundStatus" role="status">可分別調整；移到背景時暫停聲音。</p>
+      </details>
       <button id="btnMenuInstall" class="function-option"></button>
       <button id="btnUpdate" class="function-option"><span class="function-icon">↻</span><span><b>檢查更新</b><small id="updateStatus" role="status">連線時自動檢查新版</small></span><strong>更新</strong></button>
     </div>
@@ -193,6 +201,7 @@
 <div id="dusk"></div>
 
 <script src="data.js"></script>
+<script src="sound-core.js"></script>
 <script src="audio.js"></script>
 <script src="game.js"></script>
 <script src="practice-data.js"></script>

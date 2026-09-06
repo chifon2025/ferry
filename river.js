@@ -60,7 +60,7 @@ window.FerryRiver = (() => {
     if(autoResume && journey().active){autoResume=false;render(journey().active.phase);}else render('home');
     keyboardLayout();
   }
-  function hide(){if(host)host.hidden=true;document.body.classList.remove('river-mode');clearTimeout(timer);}
+  function hide(){if(host)host.hidden=true;document.body.classList.remove('river-mode');clearTimeout(timer);ZenAudio.setScene('classic');}
   function toast(text){$('riverToast').textContent=text;$('riverToast').classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>$('riverToast')?.classList.remove('visible'),3600);}
   function setIntro(kicker,title,sub=''){$('riverIntro').innerHTML=`<span class="river-kicker">${kicker}</span><h1 id="riverTitle" tabindex="-1">${title}</h1>${sub?`<p>${sub}</p>`:''}`;}
   function setDock(html){$('riverDock').innerHTML=html;$('riverDock').scrollTop=0;}
@@ -69,6 +69,7 @@ window.FerryRiver = (() => {
   }
   function lantern(){return `<span class="lantern-art" aria-hidden="true"><i class="lantern-flame"></i><i class="lantern-paper"></i><i class="lantern-base"></i><i class="lantern-reflection"></i></span>`;}
   function render(next) {
+    ZenAudio.setScene(next);
     screen=next;host.dataset.screen=screen;$('riverHotspots').innerHTML='';$('riverToast').classList.remove('visible');
     $('floatingLantern').innerHTML='';$('floatingLantern').className='river-floating';
     const p=journey(),a=p.active,story=stories[a?.story];
@@ -122,6 +123,7 @@ window.FerryRiver = (() => {
     if(journey().active?.phase!=='release')return;
     if(!save(C.advance(api.getState(),'shore')))return;
     render('shore');$('floatingLantern').className='river-floating drifting';
+    ZenAudio.effect('release');
   }
   function begin(story=null) {
     if(!save(C.begin(api.getState(),story,api.day())))return;
@@ -131,22 +133,22 @@ window.FerryRiver = (() => {
     if(action==='home'){render('home');return;}
     if(action==='resume'){render(journey().active?.phase||'home');return;}
     if(action==='begin'){begin();return;}
-    if(action.startsWith('story:')){selected=action.slice(6);render('encounter');return;}
+    if(action.startsWith('story:')){selected=action.slice(6);render('encounter');if(selected==='reply')ZenAudio.effect('mail');return;}
     if(action==='storywish'){begin(selected);return;}
     if(action==='see'){
       if(!save(C.draft(api.getState(),$('riverWish').value)))return;
       if(save(C.advance(api.getState(),'see')))render('see');return;
     }
-    if(action==='ready'){if(save(C.advance(api.getState(),'release')))render('release');return;}
+    if(action==='ready'){if(save(C.advance(api.getState(),'release'))){render('release');ZenAudio.effect('paper');}return;}
     if(action==='release'){if(!suppressedClick)release();return;}
-    if(action.startsWith('act:')){const key=action.slice(4);if(save(C.act(api.getState(),key))){$('shoreResponse').textContent=shoreText(key);host.dataset.moment=key;}return;}
+    if(action.startsWith('act:')){const key=action.slice(4);if(save(C.act(api.getState(),key))){$('shoreResponse').textContent=shoreText(key);host.dataset.moment=key;ZenAudio.effect(key);}return;}
     if(action==='finish'||action==='finishnote'){
       const a=journey().active,note=action==='finishnote'?$('riverNote').value:null;
       if(save(C.finish(api.getState(),api.day(),note,stories[a?.story]?.later)))render('done');return;
     }
-    if(action==='sip'){host.classList.toggle('sipping');toast('一口暖茶，水聲在旁。');return;}
-    if(action.startsWith('old:')){api.open(action.slice(4));return;}
-    if(['walk','tea','book','notes','note','shore'].includes(action))render(action);
+    if(action==='sip'){host.classList.toggle('sipping');ZenAudio.effect('tea');toast('一口暖茶，水聲在旁。');return;}
+    if(action.startsWith('old:')){if(action==='old:mail')ZenAudio.effect('mail');api.open(action.slice(4));return;}
+    if(['walk','tea','book','notes','note','shore'].includes(action)){render(action);if(['book','notes'].includes(action))ZenAudio.effect('paper');}
   }
   function prepareUpdate() {
     if(!host || host.hidden)return true;
