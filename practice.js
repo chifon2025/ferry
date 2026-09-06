@@ -24,6 +24,7 @@ window.FerryPractice = (() => {
     carry:replay ? "確認這段自由試玩完成。" : carryOpen ? "若願意，寫下生活中認得出的時刻和一小步。" : "故事已完成；選擇要不要留一個生活提醒。"
   })[phase];
   function paint(kicker, title, content, controls = [], back = true) {
+    window.FerryRiver?.hide();
     idleBar.classList.add("hidden");
     overlay.className = "practice-overlay";
     overlay.innerHTML = `<main class="practice-panel" aria-labelledby="practiceTitle"><div class="practice-heading">${back ? '<button class="practice-back" data-do="home" aria-label="回到渡口，保留進度">← 渡口</button>' : '<span class="practice-seal">日常體悟版</span>'}<span>${esc(kicker)}</span></div><h1 id="practiceTitle" tabindex="-1">${esc(title)}</h1>${content}<div class="practice-actions">${controls.join("")}</div><p class="practice-foot">河有自己的去向，你有眼前的一步。</p></main>`;
@@ -73,9 +74,12 @@ window.FerryPractice = (() => {
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("functionPanel").classList.contains("hidden"))setFunctionMenu(false);});
     updateFunctionMenu();
   }
-  function home() {
+  function home(classic=false) {
     view = "home"; applySky(); renderWorld();
     $("dateLabel").textContent = ({dawn:"晨光初起",day:"日光在岸",dusk:"暮色漸近",night:"一盞夜渡"})[document.body.dataset.tod];
+    if(window.FerryRiver && !classic && !new URLSearchParams(location.search).has("classic")) {
+      window.FerryRiver.show({getState:()=>S,commit,open:dispatch,error,day:todayStr});return;
+    }
     const p = S.dailyPractice, active = p.active;
     const unread = S.letters.some(x => !x.read);
     const next = PRACTICE_STORIES[p.completed.length % PRACTICE_STORIES.length];
@@ -123,7 +127,7 @@ window.FerryPractice = (() => {
   function replays() {view="replays"; paint("自由試玩 · 不影響每日進度","選一段日常故事",paragraph("這裡可直接玩完整故事，後續也會立刻顯示。沒有答對獎勵，玩完不會占用今日正式故事。"),PRACTICE_STORIES.map(x=>button("replay:"+x.id,x.title,x.theme)));}
   function mail() {
     view="mail";
-    let next = C.settle(S,todayStr());
+    let next = settleState(S);
     // 只結算識別得出的舊種子，不丟棄未知資料。
     next.seeds = next.seeds.filter(seed => {
       if (!seed.date || seed.date >= todayStr()) return true;
@@ -210,6 +214,7 @@ window.FerryPractice = (() => {
   }
   async function dispatch(key) {
     if(key==="home")return home();
+    if(key==="classic")return home(true);
     if(key==="about")return about();
     if(key==="install")return installApp();
     if(key==="export") {
@@ -257,7 +262,7 @@ window.FerryPractice = (() => {
         if(!localStorage.getItem(backup)){localStorage.setItem(backup,lastRaw);if(localStorage.getItem(backup)!==lastRaw)throw new Error("backup");}
       }
       S=Object.assign(defaultState(),next);
-      if(!commit(C.settle(S,todayStr()))) {blocked=true;throw new Error("storage");}
+      if(!commit(settleState(S))) {blocked=true;throw new Error("storage");}
       home();
       try {
         if(sessionStorage.getItem("du_ferry_update_resume")==="story") {
@@ -271,23 +276,28 @@ window.FerryPractice = (() => {
       paint("存檔保護","先把原來的渡口留好",paragraph("目前無法安全讀取或儲存進度，沒有覆寫舊存檔。可能是儲存空間、瀏覽器權限，或存檔格式問題。請先匯出原始資料，再確認設定或尋求協助。"),[button("export","匯出原始存檔備份")],false);
     }
   }
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!blocked&&view==="home"){if(commit(C.settle(S,todayStr())))home();}});
+  function settleState(state) {
+    const next=C.settle(state,todayStr());
+    return window.RiverCore ? window.RiverCore.settle(next,todayStr()) : next;
+  }
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!blocked&&view==="home"){if(commit(settleState(S)) && !window.FerryRiver?.isVisible())home();}});
   window.addEventListener("storage",event=>{if(event.key===SAVE_KEY){blocked=true;error("另一個分頁更新了進度。此頁已暫停寫入，請重新整理接續。");}});
   window.addEventListener("beforeinstallprompt",event=>{
     event.preventDefault();
     installPrompt=event;
     updateFunctionMenu();
-    if(view==="home")home(); else if(view==="about")about();
+    if(view==="home"&&!window.FerryRiver?.isVisible())home(); else if(view==="about")about();
   });
   window.addEventListener("appinstalled",()=>{
     installPrompt=null; installed=true;
     updateFunctionMenu();
-    if(view==="home")home(); else if(view==="about"||view==="install")about();
+    if(view==="home"&&!window.FerryRiver?.isVisible())home(); else if(view==="about"||view==="install")about();
   });
   function prepareUpdate() {
     if(blocked || $("saveWarning"))return false;
     // 表單未離開前不自動重載，包括未保存的「渡我一下」文字。
-    if(overlay.querySelector("input, textarea"))return false;
+    if(window.FerryRiver && !window.FerryRiver.prepareUpdate())return false;
+    if(!overlay.classList.contains("hidden") && overlay.querySelector("input, textarea"))return false;
     try {
       if(view==="story")sessionStorage.setItem("du_ferry_update_resume","story");
       else sessionStorage.removeItem("du_ferry_update_resume");

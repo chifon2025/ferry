@@ -2,7 +2,7 @@
 "use strict";
 
 const CACHE_PREFIX = "du-ferry:" + self.registration.scope + ":";
-const CACHE_VERSION = CACHE_PREFIX + "daily-v4";
+const CACHE_VERSION = CACHE_PREFIX + "daily-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,11 @@ const APP_SHELL = [
   "./practice-data.js",
   "./practice-core.js",
   "./practice.js",
+  "./river-core.js",
+  "./river.js",
+  "./river.css",
+  "./art/river-portrait.webp",
+  "./art/ferryman.webp",
   "./pwa-update.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",

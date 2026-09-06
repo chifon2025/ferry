@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
       data = oldFiles.get(file);
     } else {
       data = fs.readFileSync(path.join(root, file));
-      if (file === 'sw.js') data = Buffer.from(data.toString().replace('daily-v4', `daily-${release}`));
+      if (file === 'sw.js') data = Buffer.from(data.toString().replace(/daily-v\d+/, `daily-${release}`));
     }
     res.writeHead(200, {'Content-Type':mime[path.extname(file)] || 'application/octet-stream','Cache-Control':'no-store'});
     res.end(data);
@@ -37,7 +37,7 @@ const waitVersion = (page, version) => page.waitForFunction(async v => (await ca
     const context = await browser.newContext({viewport:{width:390,height:844}});
     const page = await context.newPage();
     const errors=[];page.on('pageerror', e=>errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/?offline-test=1`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/?offline-test=1&classic=1`);
     await page.waitForFunction(()=>navigator.serviceWorker.controller);
     await page.locator('[data-do="start"]').click();
     await page.locator('[data-do="next"]').click();
