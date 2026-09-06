@@ -4,7 +4,9 @@
   const defaults={music:.45,ambience:.7,effects:.6,riverOnly:false};
   // Quiet source calibration also applies to existing saved mixer levels.
   const WATER_LEVEL=.10,WIND_LEVEL=.025;
-  const motifs=[[0,2,4,2,1],[0,1,2,4,2],[4,2,1,0]],scale=[293.665,329.628,391.995,440,523.251];
+  // Warm pentatonic phrases, with room for each string to decay.
+  const motifs=[[0,2,1,4,0],[0,1,3,2,0],[4,2,1,0]],scale=[293.665,329.628,369.994,440,493.883];
+  const noteTimes=[0,2.4,5.8,10.2,15.6];
   // Small lookup tables keep first-touch synthesis inexpensive on phones.
   const wave=Float32Array.from({length:4096},(_,i)=>Math.sin(i*Math.PI*2/4096));
   const grainEnv=Float32Array.from({length:1024},(_,i)=>{const u=i/1023;return (1-Math.exp(-u*35))*Math.exp(-u*6)*(1-u);});
@@ -83,8 +85,15 @@
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(volume,t+Math.min(.07,duration/3));g.gain.exponentialRampToValueAtTime(.00001,t+duration);
       s.connect(filter);filter.connect(g);g.connect(bus);cleanup(s,[filter,g]);s.start(t);s.stop(t+duration+.02);
     }
-    function pluck(f,t){tone(f,t,2.8,.09,music,'triangle');tone(f*2.002,t,1.6,.018,music);tone(f,t+.19,2,.015,music);}
-    function phrase(index=0,at=ctx.currentTime){motifs[index%motifs.length].forEach((n,i)=>pluck(scale[n],at+i*.82));}
+    function pluck(f,t){
+      const o=ctx.createOscillator(),lp=ctx.createBiquadFilter(),g=ctx.createGain();
+      o.type='triangle';o.frequency.value=f;lp.type='lowpass';lp.Q.value=.35;
+      lp.frequency.setValueAtTime(f*3.2,t);lp.frequency.exponentialRampToValueAtTime(f*1.5,t+2.8);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.10,t+.035);g.gain.exponentialRampToValueAtTime(.00001,t+5.2);
+      o.connect(lp);lp.connect(g);g.connect(music);cleanup(o,[lp,g]);o.start(t);o.stop(t+5.25);
+      tone(f*2.001,t,2.1,.009,music);tone(f,t+.26,3.7,.007,music);
+    }
+    function phrase(index=0,at=ctx.currentTime){motifs[index%motifs.length].forEach((n,i)=>pluck(scale[n],at+noteTimes[i]));}
     function creak(){tone(210,ctx.currentTime,.4,.022,ambience,'triangle',255);}
     function effect(kind,at=ctx.currentTime){
       if(kind==='paper'){rustle(at,.35,.2,2300);rustle(at+.18,.4,.12,1600);}
@@ -107,5 +116,5 @@
     function dispose(){binaural(false);for(const s of [...sources,...active]){try{s.stop();s.disconnect();}catch(_){}}master.disconnect();active.clear();}
     return {mix,scene,startAmbience,phrase,effect,creak,binaural,dispose,levels:()=>({master:master.gain.value,music:music.gain.value,ambience:ambience.gain.value,effects:effects.gain.value,scene:currentScene,active:active.size})};
   }
-  return {settings,enabled,defaults,motifs,streamData,create};
+  return {settings,enabled,defaults,motifs,noteTimes,streamData,create};
 });

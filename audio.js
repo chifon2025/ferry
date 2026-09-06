@@ -1,4 +1,4 @@
-/* Phone-first sound: river, a small recurring theme, tactile actions. */
+/* Phone-first sound: sparse Zen-style strings and tactile actions. Water stays off. */
 'use strict';
 const ZenAudio=(()=>{
   const MASTER='du_ferry_sound',MIX='du_ferry_audio_v2';
@@ -23,7 +23,7 @@ const ZenAudio=(()=>{
     if(ctx.currentTime>=nextPhrase){
       if(!prefs.riverOnly&&prefs.music>0&&!['shore','note','done'].includes(scene))palette.phrase(phraseIndex);
       if(!prefs.riverOnly&&prefs.ambience>0&&['home','walk'].includes(scene))palette.creak();
-      phraseIndex++;nextPhrase=ctx.currentTime+21+(phraseIndex%3)*3;
+      phraseIndex++;nextPhrase=ctx.currentTime+27+(phraseIndex%3)*4;
     }
   },700);}
   function stopTimer(){if(timer!==null){clearInterval(timer);timer=null;}}

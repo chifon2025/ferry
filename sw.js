@@ -2,7 +2,7 @@
 "use strict";
 
 const CACHE_PREFIX = "du-ferry:" + self.registration.scope + ":";
-const CACHE_VERSION = CACHE_PREFIX + "daily-v9";
+const CACHE_VERSION = CACHE_PREFIX + "daily-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
