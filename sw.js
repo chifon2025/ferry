@@ -2,10 +2,18 @@
 "use strict";
 
 const CACHE_PREFIX = "du-ferry:" + self.registration.scope + ":";
-const CACHE_VERSION = CACHE_PREFIX + "daily-v10";
+const CACHE_VERSION = CACHE_PREFIX + "heartlight-v1";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./heartlight.css",
+  "./heartlight.js",
+  "./art/heartlight-garden.webp",
+  "./music/heartlight-warm-strings.mp3",
+  "./legacy.html",
+  "./icons/heartlight-192.png",
+  "./icons/heartlight-512.png",
+  "./icons/heartlight-maskable-512.png",
   "./style.css",
   "./data.js",
   "./audio.js",
@@ -60,6 +68,22 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+async function mediaRange(request, response) {
+  const range = request.headers.get('range');
+  if (!range || !response) return response;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match || (!match[1] && !match[2])) return response;
+  const bytes = await response.arrayBuffer(), size = bytes.byteLength;
+  const start = match[1] ? Number(match[1]) : Math.max(0,size-Number(match[2]));
+  const end = match[1] && match[2] ? Math.min(Number(match[2]),size-1) : size-1;
+  if (start > end || start >= size) return new Response(null,{status:416,headers:{'Content-Range':`bytes */${size}`}});
+  const headers = new Headers(response.headers);
+  headers.set('Content-Range',`bytes ${start}-${end}/${size}`);
+  headers.set('Content-Length',String(end-start+1));
+  headers.set('Accept-Ranges','bytes');
+  return new Response(bytes.slice(start,end+1),{status:206,headers});
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -70,17 +94,18 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.open(CACHE_VERSION).then(async (cache) => {
-      const cached = await cache.match(request.mode === "navigate" ? "./index.html" : request);
-      if (cached) return cached;
+      const navigation = url.pathname === new URL('./legacy.html',self.registration.scope).pathname ? './legacy.html' : './index.html';
+      const cached = await cache.match(request.mode === "navigate" ? navigation : request);
+      if (cached) return mediaRange(request,cached);
 
       return fetch(request).then((response) => {
-        if (response && response.ok) {
+        if (response && response.ok && response.status !== 206) {
           const copy = response.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
         }
         return response;
       }).catch(() => {
-        if (request.mode === "navigate") return cache.match("./index.html");
+        if (request.mode === "navigate") return cache.match(navigation);
         throw new Error("offline and resource is not cached");
       });
     })

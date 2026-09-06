@@ -10,7 +10,8 @@
 
   function applyUpdate() {
     if (!pending || reloading || document.hidden) return;
-    if (!window.FerryPractice?.prepareUpdate()) {
+    const app = window.FerryHeartlight || window.FerryPractice;
+    if (app && !app.prepareUpdate()) {
       setStatus("新版已備妥，完成填寫後可套用");
       let banner = document.getElementById("updateNotice");
       if (!banner) {
