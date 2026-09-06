@@ -59,13 +59,14 @@ test('all reflection responses neutral, idempotent and optional',()=>{
     assert.equal(r.calmCount,s.calmCount);assert.deepEqual(r.flags,s.flags);assert.deepEqual(C.reflect(r,id,'另一回答','2026-09-07'),r);
   }
 });
-test('service worker caches complete shell, preserves other apps and waits for old clients',async()=>{
-  const listeners={},deleted=[],added=[];
+test('service worker downloads fresh shell before activating and preserves other apps',async()=>{
+  const listeners={},deleted=[],added=[];let skipped=false;
   const keys=['du-ferry-v1','du-ferry-v3','qiyuan-cache','other-game-v1','du-ferry:https://example.com/elsewhere/:daily-v1'];
-  const context={URL,Promise,Error,self:{registration:{scope:'https://example.com/ferry/'},location:{origin:'https://example.com'},clients:{claim:async()=>{}},addEventListener:(event,fn)=>listeners[event]=fn},caches:{keys:async()=>keys,delete:async(key)=>deleted.push(key),open:async()=>({addAll:async(shell)=>added.push(...shell)})}};
+  const context={URL,Promise,Error,Request:class {constructor(url,options){this.url=url;this.cache=options.cache;}},self:{skipWaiting:async()=>{assert.ok(added.length);skipped=true;},registration:{scope:'https://example.com/ferry/'},location:{origin:'https://example.com'},clients:{claim:async()=>{},matchAll:async()=>[]},addEventListener:(event,fn)=>listeners[event]=fn},caches:{keys:async()=>keys,delete:async(key)=>deleted.push(key),open:async()=>({addAll:async(shell)=>added.push(...shell)})}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8'),context);
   let wait;listeners.install({waitUntil:p=>wait=p});await wait;
-  for(const file of added)assert.ok(fs.existsSync(path.join(__dirname,'..',file)));
+  assert.equal(skipped,true);
+  for(const file of added){assert.equal(file.cache,'reload');assert.ok(fs.existsSync(path.join(__dirname,'..',file.url)));}
   listeners.activate({waitUntil:p=>wait=p});await wait;
   assert.deepEqual(deleted,['du-ferry-v1','du-ferry-v3']);
   let responded=false;listeners.fetch({request:{method:'GET',url:'https://example.com/qiyuan/game.js'},respondWith:()=>responded=true});assert.equal(responded,false);

@@ -165,8 +165,8 @@ window.FerryPractice = (() => {
   }
   function about() {
     view="about";
-    paint("一個可以帶回日常的小遊戲","把渡口放在身邊",`<p>《渡》以相信真我、回歸平靜、做好當下、允許成真為創作方向。你仍能在不平靜時照顧自己、做出選擇；遊戲不保證願望實現。</p><h2>任何人都能玩</h2><p>免帳號、免商店下載，分享這個網址就能開始。安裝後會有主畫面圖示，並以獨立 App 視窗開啟。</p><h2>安裝到手機</h2><p>點右上角「⚙ 功能」→「安裝手機 App」。支援直接安裝的瀏覽器會顯示系統安裝視窗；iPhone 則會顯示 Safari 的正確步驟。</p><h2>離線遊玩</h2><p>第一次請保持連線，等離線版本準備完成後，再關閉所有《渡》分頁或 App 視窗並重開。之後沒有網路也能進入遊戲。</p><h2>你的紀錄留在這裡</h2><p>沒有伺服器存檔，不會在裝置間同步；換瀏覽器、清除網站資料或無痕視窗結束，可能失去進度。公開的是遊戲，不是你的生活紀錄。網站主機仍可能保有一般連線紀錄。</p><p class="practice-note" id="offlineStatus">${"serviceWorker" in navigator && navigator.serviceWorker.controller ? "離線版本已接管此頁。" : "首次造訪請保持連線，離線版本準備好後會在這裡顯示。"}</p><p>這是日常覺察的原創遊戲，不是治療，也不是課程原文。需要協助時，可以找信任的人或合適的專業人員。</p>`,[button("share","分享遊戲網址"),button("export","匯出這台裝置的存檔備份")]);
-    if("serviceWorker" in navigator) navigator.serviceWorker.ready.then(()=>{if(view==="about"&&$("offlineStatus")) $("offlineStatus").textContent="離線版本已準備好。更新會在關閉所有渡口分頁、下次開啟時接手。";});
+    paint("一個可以帶回日常的小遊戲","把渡口放在身邊",`<p>《渡》以相信真我、回歸平靜、做好當下、允許成真為創作方向。你仍能在不平靜時照顧自己、做出選擇；遊戲不保證願望實現。</p><h2>任何人都能玩</h2><p>免帳號、免商店下載，分享這個網址就能開始。安裝後會有主畫面圖示，並以獨立 App 視窗開啟。</p><h2>安裝到手機</h2><p>點右上角「⚙ 功能」→「安裝手機 App」。支援直接安裝的瀏覽器會顯示系統安裝視窗；iPhone 則會顯示 Safari 的正確步驟。</p><h2>離線遊玩</h2><p>第一次請保持連線，等離線版本準備完成。之後沒有網路也能進入遊戲；重新連線或回到 App 時會自動檢查更新。</p><h2>你的紀錄留在這裡</h2><p>沒有伺服器存檔，不會在裝置間同步；換瀏覽器、清除網站資料或無痕視窗結束，可能失去進度。公開的是遊戲，不是你的生活紀錄。網站主機仍可能保有一般連線紀錄。</p><p class="practice-note" id="offlineStatus">${"serviceWorker" in navigator && navigator.serviceWorker.controller ? "離線版本已接管此頁。" : "首次造訪請保持連線，離線版本準備好後會在這裡顯示。"}</p><p>這是日常覺察的原創遊戲，不是治療，也不是課程原文。需要協助時，可以找信任的人或合適的專業人員。</p>`,[button("share","分享遊戲網址"),button("export","匯出這台裝置的存檔備份")]);
+    if("serviceWorker" in navigator) navigator.serviceWorker.ready.then(()=>{if(view==="about"&&$("offlineStatus")) $("offlineStatus").textContent="離線版本已準備好。回到 App 時會檢查更新，也可從右上「功能」手動檢查。";});
   }
   async function installApp() {
     if (installed) {
@@ -259,6 +259,12 @@ window.FerryPractice = (() => {
       S=Object.assign(defaultState(),next);
       if(!commit(C.settle(S,todayStr()))) {blocked=true;throw new Error("storage");}
       home();
+      try {
+        if(sessionStorage.getItem("du_ferry_update_resume")==="story") {
+          sessionStorage.removeItem("du_ferry_update_resume");
+          if(S.dailyPractice.active)renderStory();
+        }
+      } catch(_) { /* 暫存不可用仍可從「接著走」繼續。 */ }
       if(new URLSearchParams(location.search).has("ferry"))help();
     } catch(_) {
       blocked=true;
@@ -278,6 +284,16 @@ window.FerryPractice = (() => {
     updateFunctionMenu();
     if(view==="home")home(); else if(view==="about"||view==="install")about();
   });
-  return {home,init,installApp};
+  function prepareUpdate() {
+    if(blocked || $("saveWarning"))return false;
+    // 表單未離開前不自動重載，包括未保存的「渡我一下」文字。
+    if(overlay.querySelector("input, textarea"))return false;
+    try {
+      if(view==="story")sessionStorage.setItem("du_ferry_update_resume","story");
+      else sessionStorage.removeItem("du_ferry_update_resume");
+    } catch(_) { /* 更新後仍可由首頁接續已保存的故事。 */ }
+    return true;
+  }
+  return {home,init,installApp,prepareUpdate};
 })();
 FerryPractice.init();

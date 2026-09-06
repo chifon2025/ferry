@@ -157,6 +157,7 @@
     <div class="function-body">
       <button id="btnSound" class="function-option"></button>
       <button id="btnMenuInstall" class="function-option"></button>
+      <button id="btnUpdate" class="function-option"><span class="function-icon">↻</span><span><b>檢查更新</b><small id="updateStatus" role="status">連線時自動檢查新版</small></span><strong>更新</strong></button>
     </div>
     <p class="function-note">遊戲進度會自動保存在這台裝置。</p>
   </section>
@@ -197,16 +198,6 @@
 <script src="practice-core.js"></script>
 <script src="practice.js"></script>
 <noscript><div class="practice-nojs">《渡》需要啟用 JavaScript 才能遊玩。這是免帳號的靜態遊戲，存檔只保留在你的瀏覽器。</div></noscript>
-<script>
-/* 本機預設不掛 SW；離線驗證可明確使用 ?offline-test=1。 */
-const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-if ("serviceWorker" in navigator && location.protocol !== "file:" && (!IS_DEV || new URLSearchParams(location.search).has("offline-test"))) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js", {updateViaCache:"none"}).catch((error) => {
-      console.warn("Service Worker 註冊失敗：", error);
-    });
-  });
-}
-</script>
+<script src="pwa-update.js"></script>
 </body>
 </html>

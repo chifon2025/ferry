@@ -2,7 +2,7 @@
 "use strict";
 
 const CACHE_PREFIX = "du-ferry:" + self.registration.scope + ":";
-const CACHE_VERSION = CACHE_PREFIX + "daily-v3";
+const CACHE_VERSION = CACHE_PREFIX + "daily-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const APP_SHELL = [
   "./practice-data.js",
   "./practice-core.js",
   "./practice.js",
+  "./pwa-update.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -23,20 +24,33 @@ const APP_SHELL = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then((cache) => cache.addAll(APP_SHELL))
-      // 等舊分頁關閉再更新，避免新舊故事引擎混用。
+      .then((cache) => cache.addAll(APP_SHELL.map(url => new Request(url, {cache:"reload"}))))
+      // 完整下載成功才接手；離線或下載失敗時保留原版。
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(
+      .then(async (keys) => {
+        // 舊頁沒有 controllerchange 處理器，只在首次遷移時重新開啟。
+        const legacy = keys.some(key => key.startsWith(CACHE_PREFIX) && /:daily-v[123]$/.test(key) || /^du-ferry-v[123]$/.test(key));
+        await Promise.all(
         keys.filter((key) => key !== CACHE_VERSION &&
           (key.startsWith(CACHE_PREFIX) || /^du-ferry-v[123]$/.test(key)))
           .map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+        );
+        await self.clients.claim();
+        if (legacy) {
+          const clients = await self.clients.matchAll({type:"window"});
+          clients.filter(client => {
+            const url = new URL(client.url), root = new URL(self.registration.scope);
+            return url.origin === root.origin && (url.pathname === root.pathname || url.pathname === root.pathname + "index.html");
+          }).forEach(client => { client.navigate(client.url).catch(() => {}); });
+          // 不等待導覽：導覽的 fetch 會等 activate 完成，等待它會互相阻塞。
+        }
+      })
   );
 });
 
