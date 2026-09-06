@@ -7,7 +7,7 @@ const root = path.join(__dirname,'..');
 
 function setup(values = {}, options = {}) {
   class Target {
-    constructor(){this.events = {};this.dataset={};this.attrs={};this.captures=new Set();this.hidden=false;this.paused=true;this.plays=0;}
+    constructor(){this.events = {};this.dataset={};this.attrs={};this.captures=new Set();this.hidden=false;this.paused=true;this.plays=0;this.style={values:{},setProperty(k,v){this.values[k]=v;},getPropertyValue(k){return this.values[k];}};}
     addEventListener(name, fn){(this.events[name] ||= []).push(fn);}
     async emit(name, data={}){const event={target:this,preventDefault(){},...data};for(const fn of this.events[name]||[])await fn(event);}
     setAttribute(key,value){this.attrs[key]=value;}
@@ -19,10 +19,11 @@ function setup(values = {}, options = {}) {
     focus(){this.focused=true;}
     showModal(){this.open=true;}
     close(){this.open=false;this.emit('close');}
+    getBoundingClientRect(){return this.id==='garden'?{left:0,top:0,right:options.width||390,bottom:844,width:options.width||390,height:844}:{left:options.width===320?70:100,top:440,right:options.width===320?250:280,bottom:620,width:180,height:180};}
   }
   const elements={};
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  for(const [,id] of html.matchAll(/id="([^"]+)"/g)) elements[id]=new Target();
+  for(const [,id] of html.matchAll(/id="([^"]+)"/g)){elements[id]=new Target();elements[id].id=id;}
   const document=new Target(), window=new Target(), data=new Map(Object.entries(values)), writes=[];
   document.getElementById=id=>{assert.ok(elements[id],`missing HTML element ${id}`);return elements[id];};
   const timers=new Map();let serial=0;
@@ -33,9 +34,9 @@ function setup(values = {}, options = {}) {
   vm.runInNewContext(fs.readFileSync(path.join(root,'heartlight.js'),'utf8'),context);
   return {elements,document,window,data,writes,timers,context};
 }
-const touch=(id=1)=>({pointerId:id,isPrimary:true,pointerType:'touch',button:0});
+const touch=(id=1)=>({pointerId:id,isPrimary:true,pointerType:'touch',button:0,clientX:254,clientY:588});
 
-test('press-release is immediate, ignores extra fingers and accepts a quick repeat',async()=>{
+test('grab-release is immediate, ignores extra fingers and accepts a quick repeat',async()=>{
   const s=setup(), h=s.elements.heart;
   await h.emit('pointerdown',touch());assert.equal(s.elements.garden.dataset.state,'held');
   await h.emit('pointerdown',{...touch(2),isPrimary:false});
@@ -45,6 +46,41 @@ test('press-release is immediate, ignores extra fingers and accepts a quick repe
   for(const fn of s.timers.values())fn();
   assert.equal(s.elements.garden.dataset.state,'held');
   await h.emit('pointerup',touch(3));assert.equal(s.elements.garden.dataset.state,'released');
+});
+test('drag distance tightens the line and returning the finger loosens it before release',async()=>{
+  const s=setup(),h=s.elements.heart,g=s.elements.garden;
+  const tension=()=>Number(g.style.getPropertyValue('--tension'));
+  await h.emit('pointerdown',touch());assert.equal(tension(),0);
+  const slack=s.elements.tetherPath.attrs.d;
+  await h.emit('pointermove',{...touch(),clientX:294,clientY:588});
+  const middle=tension();assert.ok(middle>0 && middle<.5);
+  await h.emit('pointermove',{...touch(),clientX:334,clientY:588});assert.ok(tension()>middle);
+  assert.notEqual(s.elements.tetherPath.attrs.d,slack);
+  await h.emit('pointermove',{...touch(),clientX:264,clientY:588});assert.ok(tension()<middle);
+  assert.equal(g.dataset.state,'held');
+  await h.emit('pointermove',touch());assert.equal(tension(),0);assert.equal(s.elements.tetherPath.attrs.d,slack);
+  await h.emit('pointermove',{...touch(),clientX:210});assert.equal(tension(),0,'moving toward the light must not stretch the line');
+  await h.emit('pointerup',touch());assert.equal(g.dataset.state,'released');
+});
+test('holding still and reported pressure do not increase tension; other fingers are ignored',async()=>{
+  const s=setup(),h=s.elements.heart,g=s.elements.garden;
+  await h.emit('pointerdown',{...touch(),pressure:1});
+  await h.emit('pointermove',{...touch(),pressure:.8});
+  assert.equal(Number(g.style.getPropertyValue('--tension')),0);
+  await h.emit('pointermove',{...touch(2),clientX:390});
+  assert.equal(Number(g.style.getPropertyValue('--tension')),0);
+  for(const timer of s.timers.values())timer();assert.equal(Number(g.style.getPropertyValue('--tension')),0);
+});
+test('line stays bounded on narrow screens and resets after cancellation and resize',async()=>{
+  const s=setup({}, {width:320}),h=s.elements.heart,g=s.elements.garden;
+  await h.emit('pointerdown',touch());
+  await h.emit('pointermove',{...touch(),clientX:3000,clientY:-3000});
+  assert.ok(Number(g.style.getPropertyValue('--tension'))<=1);
+  const endX=70+154+parseFloat(g.style.getPropertyValue('--grip-x'));
+  assert.ok(endX<=295 && endX>=25);
+  await h.emit('pointercancel',touch());assert.equal(g.style.getPropertyValue('--tension'),'0');
+  await h.emit('pointerdown',touch());await h.emit('pointermove',{...touch(),clientX:284});
+  await s.window.emit('resize');assert.equal(g.dataset.state,'rest');assert.equal(g.style.getPropertyValue('--tension'),'0');
 });
 test('cancel, lost capture, background and menu leave no pressed state',async()=>{
   for(const cause of ['pointercancel','lostpointercapture','hidden','menu']){

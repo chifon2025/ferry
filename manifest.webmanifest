@@ -2,7 +2,7 @@
   "id": "./",
   "name": "渡",
   "short_name": "渡",
-  "description": "心裡的事，先放在這裡。按住，再鬆開；帶著這份鬆，回到生活。",
+  "description": "牽動細線，慢慢鬆開。這一刻，可以少用一點力嗎？",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
@@ -15,7 +15,7 @@
     {
       "name": "讓心鬆一點",
       "short_name": "心燈",
-      "description": "按住，再鬆開",
+      "description": "牽動細線，慢慢鬆開",
       "url": "./",
       "icons": [{ "src": "icons/heartlight-192.png", "sizes": "192x192" }]
     }

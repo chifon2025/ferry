@@ -14,6 +14,7 @@
   let storedPrefs = parse(read(PREFS));
   let prefs = {tap:storedPrefs.tap === true, reminder:storedPrefs.reminder !== false};
   let activePointer = null, activeKey = null, held = false, settleTimer = null;
+  let dragOrigin = null, geometry = null;
   let installPrompt = null, effectContext = null, soundStarted = false, lastEffect = -Infinity;
   let installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const effectiveSound = () => enabled && !mix.riverOnly;
@@ -76,23 +77,51 @@
   function render(state) {
     garden.dataset.state = state;
     heart.setAttribute('aria-pressed',String(state === 'held'));
-    const messages = {rest:'心裡的事，先放在這裡',held:'想抓住的，想推開的',released:'都可以，先鬆一點'};
+    const messages = {rest:'這一刻，可以少用一點力嗎？',held:'這一刻，可以少用一點力嗎？',released:'都可以，先鬆一點'};
     $('heartMessage').textContent = messages[state];
     $('heartMessage').hidden = !prefs.reminder;
-    $('gestureHint').textContent = state === 'held' ? (prefs.tap ? '再點一下，鬆開' : '隨時都能鬆手') : state === 'released' ? '帶著這份鬆，回到生活' : prefs.tap ? '輕點心燈，收攏再鬆開' : '按住，再鬆開';
-    $('quietLine').textContent = state === 'released' ? '還放不下，也不用逼自己' : '隨時都可以';
-    heart.setAttribute('aria-label',prefs.tap ? (held ? '鬆開心燈' : '收攏心燈') : '心燈，按住再鬆開');
+    $('gestureHint').textContent = state === 'held' ? (prefs.tap ? '再點一下，鬆開' : '慢慢退回，或隨時放手') : state === 'released' ? '帶著這份鬆，回到生活' : prefs.tap ? '輕點牽起，再點一下鬆開' : '牽動小圓點，再慢慢鬆開';
+    $('quietLine').textContent = state === 'released' ? '還放不下，也不用逼自己' : '不必用力，輕輕拖動就好';
+    heart.setAttribute('aria-label',prefs.tap ? (held ? '鬆開細線' : '牽起細線') : '牽線，拖動光旁的小圓點，再慢慢退回或放手；也可用空白鍵或 Enter');
   }
-  function begin() {
+  function measure() {
+    const bounds = heart.getBoundingClientRect(), frame = garden.getBoundingClientRect();
+    geometry = {width:bounds.width || 180,height:bounds.height || 180,left:bounds.left,top:bounds.top,frame};
+  }
+  function pull(x = 0, y = 0) {
+    if (!geometry) measure();
+    const {width,height,left,top,frame} = geometry;
+    const max = Math.min(110,width * .6), distance = Math.hypot(x,y);
+    if (distance > max) { x *= max / distance;y *= max / distance; }
+    // Keep the thumb target inside the garden even on a narrow phone.
+    x = Math.max(frame.left + 25 - (left + width * 154/180), Math.min(frame.right - 25 - (left + width * 154/180), x));
+    y = Math.max(frame.top + 25 - (top + height * 148/180), Math.min(frame.bottom - 25 - (top + height * 148/180), y));
+    const restX = 44 * width/180, restY = 28 * height/180;
+    // Only moving away from the light stretches the line; moving toward it adds slack.
+    const extension = Math.max(0,Math.hypot(restX+x,restY+y)-Math.hypot(restX,restY));
+    const tension = Math.min(1,extension/max);
+    garden.style.setProperty('--grip-x',`${x}px`);garden.style.setProperty('--grip-y',`${y}px`);
+    garden.style.setProperty('--squeeze-x',String(1 - tension * .1));
+    garden.style.setProperty('--squeeze-y',String(1 - tension * .13));
+    garden.style.setProperty('--thread-scale',String(1 - tension * .12));
+    garden.style.setProperty('--tension',String(tension));
+    const endX = 154 + x * 180/width,endY = 148 + y * 180/height;
+    const sag = 22 * (1 - tension);
+    $('tetherPath').setAttribute('d',`M 110 120 Q ${(110+endX)/2} ${(120+endY)/2+sag} ${endX} ${endY}`);
+  }
+  function begin(assisted = false) {
     clearTimeout(settleTimer);
     held = true;
+    measure();pull(assisted ? 35 : 0,assisted ? 25 : 0);
     render('held');
     startSound();
   }
   function release() {
     if (!held) return;
     held = false;
+    dragOrigin = null;
     render('released');
+    pull();
     releaseSound();
     $('heartAnnouncement').textContent = '都可以，先鬆一點。';
     clearTimeout(settleTimer);
@@ -101,17 +130,25 @@
   function cancel() {
     clearTimeout(settleTimer);
     const pointer = activePointer;
-    activePointer = null;activeKey = null;held = false;
+    activePointer = null;activeKey = null;held = false;dragOrigin = null;
     if (pointer !== null && heart.hasPointerCapture?.(pointer)) heart.releasePointerCapture(pointer);
     render('rest');
+    measure();pull();
     $('heartAnnouncement').textContent = '';
   }
   heart.addEventListener('pointerdown', event => {
     if (prefs.tap || activePointer !== null || activeKey !== null || event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
     event.preventDefault();
     activePointer = event.pointerId;
+    dragOrigin = {x:event.clientX,y:event.clientY};
     heart.setPointerCapture?.(event.pointerId);
     begin();
+  });
+  heart.addEventListener('pointermove', event => {
+    if (event.pointerId !== activePointer || !dragOrigin || !held) return;
+    event.preventDefault();
+    const x = event.clientX - dragOrigin.x,y = event.clientY - dragOrigin.y;
+    if (Number.isFinite(x) && Number.isFinite(y)) pull(x,y);
   });
   heart.addEventListener('pointerup', event => {
     if (event.pointerId !== activePointer) return;
@@ -126,21 +163,22 @@
     if (![' ','Enter'].includes(event.key) || prefs.tap) return;
     event.preventDefault();
     if (event.repeat || activeKey !== null || activePointer !== null) return;
-    activeKey = event.key;begin();
+    activeKey = event.key;begin(true);
   });
   heart.addEventListener('keyup', event => {
     if (prefs.tap || activeKey !== event.key) return;
     event.preventDefault();activeKey = null;release();
   });
   heart.addEventListener('click', event => {
-    if (prefs.tap) { held ? release() : begin(); }
+    if (prefs.tap) { held ? release() : begin(true); }
     else if (event.detail === 0 && !held && activeKey === null) {
       // Assistive technology's synthetic click offers an equivalent one-shot gesture.
-      begin();release();
+      begin(true);release();
     }
   });
   heart.addEventListener('blur', () => { if (activeKey !== null) cancel(); });
   window.addEventListener('blur', () => { if (held) cancel(); });
+  window.addEventListener('resize', cancel);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { cancel();music.pause();stopEffects(); }
     else if (soundStarted) startSound();
@@ -206,5 +244,5 @@
   });
   // The updater can safely reload this screen; there is no text-entry draft.
   window.FerryHeartlight = {prepareUpdate:() => { cancel();return true; }};
-  soundUI();installUI();render('rest');
+  soundUI();installUI();render('rest');measure();pull();
 })();
