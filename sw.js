@@ -1,8 +1,8 @@
-/* Rebuild shell only. Never read or clear player storage. */
+/* Card story offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'rebuild-v1';
-const APP_SHELL=['./','./index.html','./rebuild.css','./pwa-update.js','./manifest.webmanifest',
+const CACHE_VERSION=CACHE_PREFIX+'cards-v1';
+const APP_SHELL=['./','./index.html','./cards.css','./cards-core.js','./cards.js','./art/flower-shop.webp','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_VERSION)
@@ -15,7 +15,7 @@ self.addEventListener('activate',event=>{
     const retired=keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE_VERSION);
     await Promise.all(retired.map(key=>caches.delete(key)));
     await self.clients.claim();
-    if(retired.length){
+    if(retired.some(key=>!key.startsWith(CACHE_PREFIX+'cards-'))){
       const clients=await self.clients.matchAll({type:'window'});
       const root=new URL(self.registration.scope);
       for(const client of clients){

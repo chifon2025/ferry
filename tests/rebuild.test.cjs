@@ -10,8 +10,8 @@ function worker(options={}){
     caches:{open:async()=>cache,keys:async()=>options.keys||[],delete:async key=>deleted.push(key)},fetch:async request=>{fetched.push(request);return new Response('network');}});
   return {handlers,deleted,navigated,fetched,get precached(){return precached;},get skipped(){return skipped;},get claimed(){return claimed;}};
 }
-test('maintenance page has no gameplay or audio and all referenced files exist',()=>{
-  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.match(html,/重新製作中/);assert.doesNotMatch(html,/<audio|<canvas|heartlight|boat\.js|game\.js/);
+test('original card page replaces maintenance without resurrecting old games or audio',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.match(html,/一直沒開門的花店/);assert.doesNotMatch(html,/<audio|<canvas|heartlight|boat\.js|game\.js/);
   for(const [,file]of html.matchAll(/(?:src|href)="\.\/([^"#?]+)"/g))assert.ok(fs.existsSync(path.join(root,file)),file);
   for(const file of ['game.js','heartlight.js','boat.js','practice.js','river.js','audio.js','art/boat-river.webp','music/heartlight-warm-strings.mp3'])assert.equal(fs.existsSync(path.join(root,file)),false,file);
 });
@@ -24,22 +24,24 @@ test('PWA keeps identity and removes old shortcut descriptions',()=>{
 test('old entry URLs are navigation-only stubs',()=>{
   for(const file of ['boat.html','legacy.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert.match(html,/http-equiv="refresh" content="0;url=\.\/"/);assert.doesNotMatch(html,/<script|<audio|<canvas/);}
 });
-test('complete maintenance shell is fetched fresh before activation',async()=>{
+test('complete card shell is fetched fresh before activation',async()=>{
   const w=worker();let done;w.handlers.install({waitUntil:p=>done=p});await done;
-  assert.equal(w.skipped,true);assert.equal(w.precached.length,8);
+  assert.equal(w.skipped,true);assert.equal(w.precached.length,11);
   for(const r of w.precached){assert.equal(r.options.cache,'reload');assert.ok(fs.existsSync(path.join(root,r.url==='./'?'index.html':r.url.slice(2))));}
   const bad=worker({failInstall:true});bad.handlers.install({waitUntil:p=>done=p});await assert.rejects(done,/offline/);assert.equal(bad.skipped,false);
 });
 test('activation removes only old scoped caches and redirects only ferry tabs without deadlock',async()=>{
-  const keys=[prefix+'boat-v1',prefix+'heartlight-v2',prefix+'rebuild-v1','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
+  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'cards-v1','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
   const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;
   assert.deepEqual(w.deleted,keys.slice(0,2));assert.equal(w.claimed,true);assert.equal(w.navigated.length,2);
   assert.ok(w.navigated.every(v=>v.to===scope));
 });
-test('fresh install does not redirect unrelated or newly opened pages',async()=>{
-  const w=worker({keys:[prefix+'rebuild-v1']});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);
+test('fresh install and future card updates do not force-navigation of current story tabs',async()=>{
+  for(const keys of [[prefix+'cards-v1'],[prefix+'cards-v0',prefix+'cards-v1']]){
+    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);
+  }
 });
-test('all in-scope navigations serve maintenance offline and never fetch an old game',async()=>{
+test('all in-scope navigations serve the new shell offline and never fetch an old game',async()=>{
   const w=worker();for(const file of ['', 'index.html','boat.html','legacy.html?old=true']){
     let done;w.handlers.fetch({request:{method:'GET',mode:'navigate',url:scope+file},respondWith:p=>done=p});assert.equal(await(await done).text(),'rebuild');
   }assert.equal(w.fetched.length,0);
