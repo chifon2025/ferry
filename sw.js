@@ -1,7 +1,7 @@
 /* Card story offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'cards-v5';
+const CACHE_VERSION=CACHE_PREFIX+'cards-v6';
 const APP_SHELL=['./','./index.html','./cards.css','./cards-journey.js','./cards-stories.js','./cards-core.js','./cards-layout.js','./cards.js','./art/flower-shop.webp','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
 self.addEventListener('install',event=>{

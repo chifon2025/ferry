@@ -46,7 +46,7 @@
       button.addEventListener('click',()=>{
         if(conflict)return;selected={type,id:card.id};
         for(const peer of hand.children)peer.setAttribute('aria-pressed',String(peer===button));
-        $('confirm').disabled=false;$('confirm').textContent=type==='wish'?'帶著這張心願，翻開故事':(type==='inner'?'選擇「':'打出「')+card.title+'」';
+        $('confirm').disabled=false;$('confirm').textContent=type==='wish'?'帶著這張心願，翻開故事':(['inner','time'].includes(type)?'選擇「':'打出「')+card.title+'」';
         $('choicePreview').textContent=card.preview||'';$('choicePreview').hidden=!card.preview;
         showReader({title:card.title,text:card.text+(card.preview?'\n\n'+card.preview:'')},true);
       });hand.append(button);
@@ -55,10 +55,24 @@
     $('choicePreview').textContent='';$('choicePreview').hidden=true;
   }
   function thought(){
-    $('thought').setAttribute('aria-pressed',String(!!practice));
-    $('thoughtText').textContent=practice?'回到故事，不必完成練習':'想要與不想要 · 翻開心裡的兩面';
+    $('thought').setAttribute('aria-pressed',String(!!practice&&practice.kind!=='time'));
+    $('thoughtText').textContent=practice?'回到故事':'內心卡 · 想要與不想要';
     $('thoughtHint').textContent='看看想抓住的，也看看想推開的。可隨時離開，不影響故事結果。';
     $('thought').setAttribute('aria-label',$('thoughtText').textContent+'。'+$('thoughtHint').textContent);
+    $('timeLens').setAttribute('aria-pressed',String(practice?.kind==='time'));
+    $('timeLens').textContent=practice?'回到故事':'時間卡 · 往後看看';
+    $('timeLens').setAttribute('aria-label',practice?'回到故事，不必完成練習':'時間卡 · 往後看看。想像過些日子，再看看十年之後；不預告未來，不改變結果。');
+  }
+  function showTime(){
+    selected=null;
+    $('sceneWrap').hidden=false;$('deck').hidden=true;$('choicesArea').hidden=false;$('endingActions').hidden=true;
+    $('game').classList.add('inner-view','time-view');$('stageLabel').textContent='往後看看';
+    $('instruction').textContent='可隨時回到故事，不必得到特定感覺。';
+    const ten=practice.step==='ten';
+    const scene=ten?{title:'十年之後',type:'時間卡 · 2 / 2',text:'十年之後，這件事還會在我心裡嗎？\n\n不用急著回答。可以陪小禾想，也可以想起自己正在掛心的事。\n\n也許會淡一些，也許仍然重要。把時間拉遠，不是說現在的難處不算什麼。\n\n此刻只是人生的一段，不必現在就替整個未來下結論。'}:{title:'過些日子',type:'時間卡 · 1 / 2 · 想像，不是預告',text:C.perspectiveFor(state)+'\n\n現在不是永遠。\n\n只是把視線拉遠一點，故事尚未翻開的後續仍然未知。'};
+    const cards=ten?[{id:'fade',title:'也許會淡一些',text:'想到日子還會往前走，心裡有了一點空間。不用保證以後不再想起。'},{id:'matter',title:'可能仍會在意',text:'有些事確實會留下長久的影響。仍然在意，不代表沒有放下。'},{id:'skip',title:'先不回答',text:'不用想出十年後的答案，先回到現在。'}]:[{id:'later',title:'再往後看看',text:'十年之後，這件事還會在我心裡嗎？不用現在就知道答案。'},{id:'exit',title:'回到故事',text:'看到這裡就好。回到小禾眼前可以做的一步。'}];
+    drawChoices(cards,'time');showReader(scene,true);$('backStory').textContent='回故事';thought();
+    $('sceneTitle').focus({preventScroll:true});$('announcement').textContent=scene.title;
   }
   function showPractice(){
     const p=C.reflectionFor(state),step=practice.step;
@@ -89,6 +103,11 @@
   function advancePractice(id){
     if(!practice||conflict)return;
     if(id==='exit'){closePractice();return;}
+    if(practice.kind==='time'){
+      if(practice.step==='later'){practice.step='ten';showTime();return;}
+      const text=id==='fade'?'事情還需要處理，但此刻不必占滿整個人生。有了一點空間就好，不用努力保持。':id==='matter'?'十年後仍可能在意，也可以。你不必否定這件事的重要，更不必放棄需要的照顧、界線與行動。':'暫時不知道，也沒有關係。不必想清楚未來，才能回到今天。';
+      closePractice({title:'回到今天',type:'故事還在原來那一頁',text:text+'\n\n'+C.reflectionFor(state).carry});return;
+    }
     if(practice.step==='check'){
       const text=id==='lighter'?'留意這一點變化就好，不必保持它，也不代表事情一定照期待發展。':id==='same'?'感覺還是一樣，也能繼續。你不需要換答案或逼自己平靜。':'這次先到這裡，不必替自己的感受下結論。';
       closePractice({title:'帶著現在的自己，繼續',type:'回到眼前',text:text+'\n\n'+C.reflectionFor(state).carry+'\n\n故事與原本選的行動都還在。'});return;
@@ -96,9 +115,9 @@
     practice.held=practice.held||id==='keep';practice.step=practice.step==='want'?'avoid':'check';showPractice();
   }
   function render(focus=false){
-    practice=null;$('game').classList.remove('inner-view');
+    practice=null;$('game').classList.remove('inner-view','time-view');
     selected=null;$('game').classList.toggle('story-end',state.phase==='ending');
-    $('kept').hidden=!state.wish||state.phase==='ending';$('thought').hidden=!state.wish||state.phase==='ending';
+    $('kept').hidden=!state.wish||state.phase==='ending';$('thought').hidden=!state.wish||state.phase==='ending';$('timeLens').hidden=$('thought').hidden;
     $('sceneWrap').hidden=state.phase==='sealed';$('deck').hidden=state.phase!=='sealed';
     $('choicesArea').hidden=['sealed','ending'].includes(state.phase);$('endingActions').hidden=state.phase!=='ending';$('restNote').hidden=true;
     $('afterText').hidden=true;$('footerNote').textContent=writable?'選牌，再翻開後續。隨時可以離開，進度留在這台裝置。':'本次暫不保存進度，仍然可以繼續試玩。';
@@ -147,6 +166,11 @@
     if(conflict||!state.wish||state.phase==='ending')return;
     if(practice){closePractice();return;}
     practice={step:'want',held:false,previous:selected};showPractice();
+  });
+  $('timeLens').addEventListener('click',()=>{
+    if(conflict||!state.wish||state.phase==='ending')return;
+    if(practice){closePractice();return;}
+    practice={kind:'time',step:'later',previous:selected};showTime();
   });
   $('replay').addEventListener('click',()=>{if(state.phase==='ending'&&!conflict&&save(C.create(state.variant,C.chapterId(state))))render(true);});
   $('nextChapter').addEventListener('click',()=>{const next=C.nextChapter(state);if(next&&!conflict&&save(next))render(true);});

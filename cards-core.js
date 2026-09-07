@@ -129,6 +129,7 @@
     };
     return outcomes[s.action][s.reply];
   }
-  const api={wishes,actions,replies,repliesFor,actionsFor,chapters,chapterId,chapterFor,reflectionFor,nextChapter,stages,create,valid,transition,aftermath,ending};
+  function perspectiveFor(s){return journey.perspectives[chapterId(s)];}
+  const api={wishes,actions,replies,repliesFor,actionsFor,chapters,chapterId,chapterFor,reflectionFor,perspectiveFor,nextChapter,stages,create,valid,transition,aftermath,ending};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.FerryCardsCore=api;
 })(typeof globalThis==='object'?globalThis:this);

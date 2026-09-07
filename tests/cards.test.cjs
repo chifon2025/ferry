@@ -212,6 +212,58 @@ test('inner cards can exit from either side and sealed state without advancing; 
   }
 });
 
+test('all time cards and answers preserve pending story actions without saving feelings',async()=>{
+  const scenes=new Set();
+  for(const chapter of C.chapters)for(const answer of [0,1,2]){
+    const initial=C.create(0,chapter),s=setup({[KEY]:JSON.stringify(initial)},{readerHeight:52,lineChars:9});
+    const readAll=async()=>{let text=s.elements.storyText.textContent;while(!s.elements.pageNext.disabled){await s.elements.pageNext.emit('click');text+=s.elements.storyText.textContent;}return text;};
+    assert.equal(s.elements.timeLens.hidden,true);await s.choose(0);assert.equal(s.elements.timeLens.hidden,false);
+    await s.elements.hand.children[1].emit('click');const raw=s.data.get(KEY),writes=s.writes.length;
+    await s.elements.timeLens.emit('click');assert.equal(s.elements.timeLens.attrs['aria-pressed'],'true');assert.equal(s.elements.confirm.disabled,true);
+    const later=await readAll();assert.ok(later.startsWith(C.perspectiveFor(initial)));assert.match(later,/想像/);assert.match(later,/仍然未知/);scenes.add(C.perspectiveFor(initial));
+    await s.choose(0);assert.equal(s.elements.sceneTitle.textContent,'十年之後');assert.match(await readAll(),/十年之後，這件事還會在我心裡嗎？/);
+    await s.choose(answer);assert.equal(s.elements.sceneTitle.textContent,'回到今天');
+    assert.match(await readAll(),answer===0?/不必占滿整個人生/:answer===1?/不必否定這件事的重要/:/暫時不知道/);
+    assert.equal(s.elements.timeLens.attrs['aria-pressed'],'false');assert.equal(s.elements.confirm.disabled,false);
+    assert.equal(s.elements.hand.children[1].attrs['aria-pressed'],'true');assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,writes);
+    await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,C.actionsFor(initial)[1].id);
+  }
+  assert.equal(scenes.size,15);
+});
+
+test('time card exits and reloads retain sealed or response phase and do not reveal sealed outcomes',async()=>{
+  for(const phase of ['sealed','response'])for(const step of [0,1])for(const exit of ['backStory','timeLens','thought','answer']){
+    const s=setup();await s.choose(0);await s.choose(1);if(phase==='response'){await s.elements.deck.emit('click');await s.elements.hand.children[0].emit('click');}
+    const raw=s.data.get(KEY),writes=s.writes.length;await s.elements.timeLens.emit('click');if(step)await s.choose(0);
+    const copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.deck.hidden,phase!=='sealed');assert.equal(copy.elements.timeLens.attrs['aria-pressed'],'false');
+    if(exit==='answer')await s.choose(1);else await s.elements[exit].emit('click');
+    assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,writes);assert.equal(s.elements.deck.hidden,phase!=='sealed');
+    if(phase==='sealed'){assert.equal(s.elements.sceneWrap.hidden,true);assert.equal(s.elements.choicesArea.hidden,true);}
+    else {assert.equal(s.elements.confirm.disabled,false);await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).phase,'ending');assert.equal(s.elements.timeLens.hidden,true);}
+  }
+});
+
+test('moving between inner and time cards never replaces a pending story selection with a practice answer',async()=>{
+  for(const first of ['thought','timeLens']){
+    const second=first==='thought'?'timeLens':'thought',s=setup();await s.choose(0);await s.elements.hand.children[1].emit('click');const raw=s.data.get(KEY);
+    await s.elements[first].emit('click');await s.elements.hand.children[0].emit('click');await s.elements[second].emit('click');
+    assert.equal(s.elements.hand.children[1].attrs['aria-pressed'],'true');await s.elements[second].emit('click');await s.elements.backStory.emit('click');
+    assert.equal(s.data.get(KEY),raw);await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,'borrow');
+  }
+});
+
+test('time-card resize retains readable text and selection; conflict and corrupt saves stay protected',async()=>{
+  const s=setup({}, {readerHeight:78,lineChars:9});await s.choose(0);await s.elements.timeLens.emit('click');await s.choose(0);
+  await s.elements.hand.children[1].emit('click');const raw=s.data.get(KEY);s.elements.reader.clientHeight=26;await s.window.emit('resize');for(const fn of s.timers.values())fn();
+  assert.ok(Array.from(s.elements.storyText.textContent).length<=9);assert.equal(s.elements.confirm.disabled,false);
+  const remote=JSON.stringify(C.create(1,'goal'));s.data.set(KEY,remote);await s.window.emit('storage',{key:KEY});await s.elements.confirm.emit('click');assert.equal(s.data.get(KEY),remote);
+  await s.elements.loadLatest.emit('click');assert.equal(s.elements.timeLens.hidden,true);assert.notEqual(raw,remote);
+  for(const bad of ['{broken',JSON.stringify({...C.create(),edition:99})]){
+    const t=setup({[KEY]:bad});await t.choose(0);await t.elements.timeLens.emit('click');await t.choose(0);await t.choose(2);await t.choose(0);
+    assert.equal(t.data.get(KEY),bad);assert.equal(t.writes.length,0);assert.equal(t.elements.deck.hidden,false);
+  }
+});
+
 test('practice cannot bypass a concurrent save and never blocks chapter changes',async()=>{
   const s=setup();await s.choose(0);await s.elements.thought.emit('click');
   const remote=JSON.stringify(C.create(1,'goal'));s.data.set(KEY,remote);await s.window.emit('storage',{key:KEY});

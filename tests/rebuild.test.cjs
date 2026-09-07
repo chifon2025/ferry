@@ -31,14 +31,14 @@ test('complete card shell is fetched fresh before activation',async()=>{
   const bad=worker({failInstall:true});bad.handlers.install({waitUntil:p=>done=p});await assert.rejects(done,/offline/);assert.equal(bad.skipped,false);
 });
 test('activation removes only old scoped caches and redirects only ferry tabs without deadlock',async()=>{
-  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'cards-v5','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
+  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'cards-v6','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
   const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;
   assert.deepEqual(w.deleted,keys.slice(0,2));assert.equal(w.claimed,true);assert.equal(w.navigated.length,2);
   assert.ok(w.navigated.every(v=>v.to===scope));
 });
 test('fresh install and future card updates do not force-navigation of current story tabs',async()=>{
-  for(const keys of [[prefix+'cards-v5'],[prefix+'cards-v3',prefix+'cards-v4',prefix+'cards-v5']]){
-    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'cards-v5'));
+  for(const keys of [[prefix+'cards-v6'],[prefix+'cards-v3',prefix+'cards-v4',prefix+'cards-v5',prefix+'cards-v6']]){
+    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'cards-v6'));
   }
 });
 test('all in-scope navigations serve the new shell offline and never fetch an old game',async()=>{
