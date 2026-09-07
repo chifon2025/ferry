@@ -26,9 +26,11 @@
         if(conflict)return;selected={type,id:card.id};
         for(const peer of hand.children)peer.setAttribute('aria-pressed',String(peer===button));
         $('confirm').disabled=false;$('confirm').textContent=type==='wish'?'帶著這張心願，翻開故事':'打出「'+card.title+'」';
+        $('choicePreview').textContent=card.preview||'';$('choicePreview').hidden=!card.preview;
       });hand.append(button);
     }
     $('confirm').disabled=true;$('confirm').textContent='先選一張牌';
+    $('choicePreview').textContent='';$('choicePreview').hidden=true;
   }
   function thought(){
     $('thought').setAttribute('aria-pressed',String(state.aside));
@@ -41,6 +43,7 @@
     $('sceneWrap').hidden=state.phase==='sealed';$('deck').hidden=state.phase!=='sealed';
     $('choicesArea').hidden=['sealed','ending'].includes(state.phase);$('endingActions').hidden=state.phase!=='ending';$('restNote').hidden=true;
     $('afterText').hidden=true;$('footerNote').textContent=writable?'選牌，再翻開後續。隨時可以離開，進度留在這台裝置。':'本次暫不保存進度，仍然可以繼續試玩。';
+    $('carried').hidden=true;$('playedPath').hidden=true;
     if(state.wish)$('wishTag').textContent='心願 · '+C.wishes.find(c=>c.id===state.wish).title;
     thought();
     if(state.phase==='opening'){
@@ -56,10 +59,12 @@
       $('footerNote').textContent='你做了一個選擇。接下來的事情，還要翻開才知道。';
     }else if(state.phase==='response'){
       const next=C.aftermath(state);$('stageLabel').textContent='再看眼前';$('cardType').textContent='後續牌';$('sceneTitle').textContent=next.title;$('storyText').textContent=next.text;
-      $('instruction').textContent='有了新的消息，今天想怎麼安排？';drawChoices(C.replies,'reply');
+      if(next.clue){$('carried').textContent=next.clue;$('carried').hidden=false;}
+      $('instruction').textContent='這一步帶來了新的選擇。接下來怎麼做？';drawChoices(C.repliesFor(state),'reply');
     }else{
       const end=C.ending(state);$('stageLabel').textContent='今天先到這裡';$('cardType').textContent='這一頁的後來';$('sceneTitle').textContent=end.title;$('storyText').textContent=end.text;
       $('afterText').textContent=end.after;$('afterText').hidden=false;$('footerNote').textContent='心願還在。今天的安排，可以和原先想的不一樣。';
+      $('playedPath').textContent='你走的這一段 · '+C.actions.find(c=>c.id===state.action).title+' → '+C.repliesFor(state).find(c=>c.id===state.reply).title;$('playedPath').hidden=false;
     }
     if(focus){
       $('announcement').textContent=state.phase==='sealed'?'行動已送出，點下一張牌看後續。':$('sceneTitle').textContent;

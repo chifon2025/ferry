@@ -3,13 +3,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 const root=path.resolve(__dirname,'..'),C=require('../cards-core.js'),KEY='du_ferry_cards_v1';
 function finish(wish,action,reply,variant,aside=false){let s=C.create(variant);for(const e of [{type:'wish',id:wish},{type:'action',id:action},{type:'reveal'},...(aside?[{type:'aside'}]:[]),{type:'reply',id:reply}])s=C.transition(s,e);return s;}
 test('all wishes, actions, replies and delivery states finish coherently without modifying input',()=>{
-  let paths=0;for(const w of C.wishes)for(const a of C.actions)for(const r of C.replies)for(const v of [0,1]){
+  let paths=0;for(const w of C.wishes)for(const a of C.actions)for(const r of C.repliesFor({edition:2,action:a.id}))for(const v of [0,1]){
     const s=finish(w.id,a.id,r.id,v);assert.equal(s.phase,'ending');assert.equal(C.valid(s),true);assert.ok(C.ending(s).text.length>30);paths++;
-  }assert.equal(paths,36);
+  }assert.equal(paths,54);
   const original=C.create(),next=C.transition(original,{type:'wish',id:'share'});assert.equal(original.phase,'opening');assert.notEqual(original,next);
 });
 test('keeping and setting aside the same thought produce identical outside events and endings',()=>{
-  for(const a of C.actions)for(const r of C.replies)for(const v of [0,1]){
+  for(const a of C.actions)for(const r of C.repliesFor({edition:2,action:a.id}))for(const v of [0,1]){
     const keep=finish('share',a.id,r.id,v),aside=finish('share',a.id,r.id,v,true);
     assert.deepEqual(C.aftermath(keep),C.aftermath(aside));assert.deepEqual(C.ending(keep),C.ending(aside));assert.equal(aside.aside,true);
   }
@@ -24,7 +24,35 @@ test('invalid, skipped and double events never advance or overwrite an earlier a
   const s=C.create();for(const e of [{type:'reveal'},{type:'reply',id:'open'},{type:'wish',id:'hack'}])assert.equal(C.transition(s,e),s);
   let a=C.transition(s,{type:'wish',id:'steady'});a=C.transition(a,{type:'action',id:'call'});
   assert.equal(C.transition(a,{type:'action',id:'borrow'}),a);
-  for(const invalid of [null,{}, {...s,v:2},{...s,phase:'unknown'},{...s,wish:'share'},{...s,variant:7},{...s,aside:'yes'}])assert.equal(C.valid(invalid),false);
+  for(const invalid of [null,{}, {...s,v:2},{...s,edition:3},{...s,edition:null},{...s,phase:'unknown'},{...s,wish:'share'},{...s,variant:7},{...s,aside:'yes'}])assert.equal(C.valid(invalid),false);
+});
+test('the first action unlocks only its own follow-up cards and each has a distinct concrete ending',()=>{
+  const unique={call:'pickup',borrow:'together',notice:'invite'},endings=new Set();
+  for(const a of C.actions){
+    const state={...finish('steady',a.id,'open',0),phase:'response',reply:null};
+    assert.equal(C.repliesFor(state).length,3);
+    for(const [branch,id]of Object.entries(unique)){
+      const next=C.transition(state,{type:'reply',id});
+      if(branch===a.id)assert.equal(next.phase,'ending');else {assert.equal(next,state);assert.equal(C.valid({...state,phase:'ending',reply:id}),false);}
+    }
+    for(const reply of C.repliesFor(state)){
+      assert.ok(reply.preview.length>10);const end=C.ending(C.transition(state,{type:'reply',id:reply.id}));
+      assert.ok(end.after.length>15);endings.add(end.title);
+    }
+  }
+  assert.equal(endings.size,9);
+});
+test('legacy states retain their original two cards and endings across all 36 paths',()=>{
+  for(const wish of C.wishes)for(const action of C.actions)for(const reply of C.replies)for(const variant of [0,1]){
+    let s=C.create(variant);delete s.edition;
+    for(const event of [{type:'wish',id:wish.id},{type:'action',id:action.id},{type:'reveal'}])s=C.transition(s,event);
+    assert.equal(C.valid(s),true);assert.deepEqual(C.repliesFor(s),C.replies);
+    assert.equal(C.transition(s,{type:'reply',id:'pickup'}),s);
+    const result=C.transition(s,{type:'reply',id:reply.id});assert.equal(result.edition,undefined);assert.equal(result.phase,'ending');
+    assert.equal(C.aftermath(result).clue,undefined);
+    assert.equal(C.ending(result).title,reply.id==='open'?'門開了，故事還在走':'換個時間，繼續這件事');
+    assert.equal(C.ending(result).after,'這不是原先想像的開幕日。小店的以後，也還沒有答案。');
+  }
 });
 function setup(values={},options={}){
   const events=()=>({handlers:{},addEventListener(k,f){(this.handlers[k]??=[]).push(f);},async emit(k,e={}){for(const f of this.handlers[k]||[])await f({preventDefault(){},...e});}});
@@ -47,7 +75,13 @@ test('selection previews a card, confirmation advances, then a separate flip rev
   await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).wish,'steady');
   await s.choose(0);assert.equal(s.elements.deck.hidden,false);assert.equal(s.elements.sceneWrap.hidden,true);
   assert.equal(JSON.parse(s.data.get(KEY)).phase,'sealed');await s.elements.deck.emit('click');
-  assert.equal(s.elements.sceneTitle.textContent,'電話那一頭');assert.equal(s.elements.hand.children.length,2);assert.equal(s.active,s.elements.sceneTitle);
+  assert.equal(s.elements.sceneTitle.textContent,'電話那一頭');assert.equal(s.elements.hand.children.length,3);assert.equal(s.active,s.elements.sceneTitle);
+  assert.equal(s.elements.carried.hidden,false);assert.match(s.elements.carried.textContent,/取少量花材/);
+  const writes=s.writes.length;await s.elements.hand.children[2].emit('click');assert.equal(s.writes.length,writes);
+  assert.equal(s.elements.choicePreview.hidden,false);assert.match(s.elements.choicePreview.textContent,/暫時關著/);
+  await s.elements.thought.emit('click');assert.equal(s.elements.choicePreview.hidden,false);
+  await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).reply,'pickup');
+  assert.equal(s.elements.carried.hidden,true);assert.equal(s.elements.playedPath.hidden,false);assert.match(s.elements.playedPath.textContent,/先問清楚 → 去取現有花材/);
 });
 test('thought can be set aside and taken back without discarding a selected action or wish',async()=>{
   const s=setup();await s.choose(0);await s.elements.hand.children[1].emit('click');
@@ -56,13 +90,25 @@ test('thought can be set aside and taken back without discarding a selected acti
   await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,'borrow');assert.equal(JSON.parse(s.data.get(KEY)).wish,'share');
 });
 test('all three UI action branches can finish, rest and replay the same external circumstances',async()=>{
-  for(let action=0;action<3;action++){
-    const s=setup();await s.choose(2);await s.choose(action);await s.elements.deck.emit('click');await s.choose(action%2);
+  for(let action=0;action<3;action++)for(let reply=0;reply<3;reply++){
+    const s=setup();await s.choose(2);await s.choose(action);await s.elements.deck.emit('click');await s.choose(reply);
     assert.equal(s.elements.endingActions.hidden,false);const ending=JSON.parse(s.data.get(KEY));assert.equal(ending.phase,'ending');
     await s.elements.rest.emit('click');assert.equal(s.elements.restNote.hidden,false);
     await s.elements.replay.emit('click');const restarted=JSON.parse(s.data.get(KEY));assert.equal(restarted.phase,'opening');assert.equal(restarted.variant,ending.variant);
     assert.equal(s.elements.hand.children.length,3);
+    assert.equal(s.elements.playedPath.hidden,true);assert.equal(s.elements.choicePreview.hidden,true);
   }
+});
+test('legacy progress is not rewritten on load; replay explicitly starts the new edition',async()=>{
+  let legacy=C.create(1);delete legacy.edition;
+  const states=[legacy];for(const event of [{type:'wish',id:'welcome'},{type:'action',id:'notice'},{type:'reveal'},{type:'reply',id:'later'}]){legacy=C.transition(legacy,event);states.push(legacy);}
+  for(const state of states){
+    const raw=JSON.stringify(state,null,2),s=setup({[KEY]:raw});assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,0);
+    if(state.phase==='response')assert.equal(s.elements.hand.children.length,2);
+  }
+  const done=setup({[KEY]:JSON.stringify(legacy)});assert.equal(done.elements.sceneTitle.textContent,C.ending(legacy).title);
+  await done.elements.replay.emit('click');const next=JSON.parse(done.data.get(KEY));assert.equal(next.edition,2);assert.equal(next.variant,1);assert.equal(next.phase,'opening');
+  await done.choose(0);await done.choose(2);await done.elements.deck.emit('click');assert.equal(done.elements.hand.children.length,3);
 });
 test('reload resumes at each confirmed stage and old game or sound keys are never touched',async()=>{
   const original={du_ferry_save_v1:'private legacy data',du_ferry_sound:'off',du_ferry_audio_v2:'{"custom":1}'};
@@ -73,7 +119,7 @@ test('reload resumes at each confirmed stage and old game or sound keys are neve
   assert.ok([...s.reads,...copy.reads,...done.reads,...s.writes.map(w=>w[0])].every(k=>k===KEY));
 });
 test('corrupt and future saves remain byte-identical while temporary play continues',async()=>{
-  for(const raw of ['{broken',JSON.stringify({...C.create(),v:2}),'null']){
+  for(const raw of ['{broken',JSON.stringify({...C.create(),v:2}),JSON.stringify({...C.create(),edition:3}),'null']){
     const s=setup({[KEY]:raw});await s.choose(0);await s.choose(0);assert.equal(s.data.get(KEY),raw);assert.equal(s.elements.deck.hidden,false);assert.match(s.elements.saveStatus.textContent,/不會覆寫/);
   }
 });
