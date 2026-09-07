@@ -2,42 +2,18 @@
   "id": "./",
   "name": "渡",
   "short_name": "渡",
-  "description": "牽動細線，慢慢鬆開。這一刻，可以少用一點力嗎？",
+  "description": "《渡》重新製作中，網站入口持續保留。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "prefer_related_applications": false,
-  "theme_color": "#f4ebdd",
-  "background_color": "#f4ebdd",
-  "shortcuts": [
-    {
-      "name": "讓心鬆一點",
-      "short_name": "心燈",
-      "description": "牽動細線，慢慢鬆開",
-      "url": "./",
-      "icons": [{ "src": "icons/heartlight-192.png", "sizes": "192x192" }]
-    }
-  ],
+  "theme_color": "#102c35",
+  "background_color": "#102c35",
   "icons": [
-    {
-      "src": "icons/heartlight-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/heartlight-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/heartlight-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
   ]
 }

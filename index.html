@@ -1,63 +1,24 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f4ebdd">
-<meta name="description" content="牽動細線，慢慢鬆開。這一刻，可以少用一點力嗎？免費、免帳號、可離線安裝的手機小遊戲。">
-<title>渡｜讓心，鬆一點</title>
-<meta property="og:title" content="渡｜讓心，鬆一點">
-<meta property="og:description" content="想抓住的，想推開的，都可以先鬆一點。">
-<meta property="og:url" content="https://chifon2025.github.io/ferry/">
-<meta property="og:type" content="website">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="渡">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icons/heartlight-192.png">
-<link rel="apple-touch-icon" href="./icons/heartlight-192.png">
-<link rel="preload" as="image" href="./art/heartlight-garden.webp">
-<link rel="stylesheet" href="./heartlight.css">
-<script defer src="./heartlight.js"></script>
-<script defer src="./pwa-update.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#102c35">
+  <meta name="description" content="《渡》重新製作中，網站與手機 App 入口持續保留。">
+  <title>渡 · 重新製作中</title>
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./rebuild.css">
+  <script src="./pwa-update.js" defer></script>
 </head>
 <body>
-<main class="garden" id="garden" data-state="rest">
-  <img class="garden-art" src="./art/heartlight-garden.webp" alt="" fetchpriority="high">
-  <header class="topbar"><h1>渡</h1><button id="btnMenu" class="menu-button" aria-label="開啟功能" aria-haspopup="dialog" aria-controls="functionPanel"><span></span><span></span><span></span></button></header>
-  <div class="invitation"><p id="heartMessage">這一刻，可以少用一點力嗎？</p></div>
-  <div class="heart-place">
-    <div class="heart-shadow" aria-hidden="true"></div>
-    <button id="heart" class="heart" aria-label="牽線，拖動光旁的小圓點，再慢慢退回或放手；也可用空白鍵或 Enter" aria-describedby="gestureHint" aria-pressed="false">
-      <span class="light" aria-hidden="true"><span class="light-core"></span><span class="light-grain"></span></span>
-      <span class="threads" aria-hidden="true"><i></i><i></i><i></i></span>
-      <svg class="tether" viewBox="0 0 180 180" aria-hidden="true"><path id="tetherPath" d="M 110 120 Q 132 157 154 148"/></svg>
-      <span class="thread-grip" aria-hidden="true"><span></span></span>
-      <span class="release-ring" aria-hidden="true"></span>
-    </button>
-  </div>
-  <footer class="bottom-note"><p id="gestureHint">牽動小圓點，再慢慢鬆開</p><p class="quiet-line" id="quietLine">不必用力，輕輕拖動就好</p></footer>
-  <p class="sr-only" id="heartAnnouncement" role="status" aria-live="polite"></p>
-</main>
-<dialog id="functionPanel" class="sheet" aria-labelledby="functionTitle">
-  <div class="sheet-head"><h2 id="functionTitle">留一點空間</h2><button id="functionClose" class="close-button" aria-label="關閉功能">×</button></div>
-  <div class="sheet-body">
-    <a class="setting-row" href="./boat.html"><span><b>小舟試玩</b><small>掌舵、看看水流，再繼續</small></span><span aria-hidden="true">↗</span></a>
-    <button id="btnSound" class="setting-row"><span><b>音樂音效</b><small id="soundState">回暖</small></span><span id="soundToggle">開</span></button>
-    <div class="volume-row"><label for="musicVolume">配樂</label><input id="musicVolume" type="range" min="0" max="100" value="45" aria-label="配樂音量"></div>
-    <div class="volume-row"><label for="effectVolume">觸碰音</label><input id="effectVolume" type="range" min="0" max="100" value="60" aria-label="觸碰音量"></div>
-    <p id="soundStatus" class="setting-status" role="status">原創配樂《回暖》</p>
-    <label class="check-row"><span><b>輕點操作</b><small>不用拖動，點一下牽起，再點一下鬆開</small></span><input id="tapMode" type="checkbox"></label>
-    <label class="check-row"><span><b>一句提醒</b><small>在畫面留一句輕輕的提醒</small></span><input id="reminderMode" type="checkbox" checked></label>
-    <button id="btnMenuInstall" class="setting-row"><span><b>安裝手機 App</b><small id="installStatus">放在主畫面，想用就打開</small></span><span aria-hidden="true">↗</span></button>
-    <section id="installGuide" class="guide" hidden aria-label="安裝說明">
-      <p id="installText"></p>
-    </section>
-    <button id="btnUpdate" class="setting-row"><span><b>檢查更新</b><small id="updateStatus" role="status">連線時自動檢查新版</small></span><span aria-hidden="true">↻</span></button>
-    <details class="about"><summary>關於這盞光</summary><p>牽動光旁的小圓點，拉遠時線繃緊，慢慢退回時線就鬆了。隨時放手也可以。</p><p>想抓住的，想推開的，都可以先鬆一點。還放不下，也不用逼自己。</p><p>牽線是《渡》參考萊斯特相關釋放心法的原創互動。畫面回應手指移動，不量測握力或心裡的壓力。你可以仍有感覺，也可以回到生活，做眼前能做的事。</p><a href="./legacy.html">回看原本的渡口與紀錄</a></details>
-  </div>
-</dialog>
-<audio id="music" src="./music/heartlight-warm-strings.mp3" preload="none" loop></audio>
-<noscript><p class="nojs">請開啟 JavaScript，讓心燈能回應你的觸碰。</p></noscript>
+  <main>
+    <h1>渡</h1>
+    <p class="status">重新製作中</p>
+    <p>這裡先留白。<br>我們正在重新想像《渡》。</p>
+    <button id="btnUpdate" type="button">檢查更新</button>
+    <p id="updateStatus" class="update" role="status">網站入口保留，連線時自動檢查新版。</p>
+  </main>
 </body>
 </html>

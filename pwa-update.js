@@ -10,20 +10,6 @@
 
   function applyUpdate() {
     if (!pending || reloading || document.hidden) return;
-    const app = window.FerryHeartlight || window.FerryPractice;
-    if (app && !app.prepareUpdate()) {
-      setStatus("新版已備妥，完成填寫後可套用");
-      let banner = document.getElementById("updateNotice");
-      if (!banner) {
-        banner = document.createElement("div");
-        banner.id = "updateNotice";
-        banner.setAttribute("role", "status");
-        banner.innerHTML = '<span>新版已準備好，請先完成或保存目前填寫的內容。</span><button type="button">套用更新</button>';
-        banner.querySelector("button").addEventListener("click", applyUpdate);
-        document.body.appendChild(banner);
-      }
-      return;
-    }
     reloading = true;
     setStatus("正在開啟新版…");
     location.reload();
