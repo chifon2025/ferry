@@ -2,10 +2,16 @@
 "use strict";
 
 const CACHE_PREFIX = "du-ferry:" + self.registration.scope + ":";
-const CACHE_VERSION = CACHE_PREFIX + "heartlight-v2";
+const CACHE_VERSION = CACHE_PREFIX + "boat-v1";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./boat.html",
+  "./boat.css",
+  "./boat-core.js",
+  "./boat.js",
+  "./art/boat-river.webp",
+  "./art/boat-skiff.webp",
   "./heartlight.css",
   "./heartlight.js",
   "./art/heartlight-garden.webp",
@@ -94,7 +100,7 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.open(CACHE_VERSION).then(async (cache) => {
-      const navigation = url.pathname === new URL('./legacy.html',self.registration.scope).pathname ? './legacy.html' : './index.html';
+      const navigation = ['./legacy.html','./boat.html'].find(page => url.pathname === new URL(page,self.registration.scope).pathname) || './index.html';
       const cached = await cache.match(request.mode === "navigate" ? navigation : request);
       if (cached) return mediaRange(request,cached);
 
