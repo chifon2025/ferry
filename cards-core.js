@@ -1,6 +1,15 @@
 /* Original fiction and deterministic branching; no scores or spiritual rankings. */
 (function(root){
   'use strict';
+  const stories=typeof module==='object'&&module.exports?require('./cards-stories.js'):root.FerryCardStories;
+  const chapters=['flowers','review','order'];
+  function chapterId(s){return s.chapter===undefined?'flowers':s.chapter;}
+  function chapterFor(s){return chapterId(s)==='flowers'?{
+    title:'一直沒開門的花店',thought:'一定要照原計畫才行。',
+    opening:{title:'今天，花店要開門了',text:'小禾把鑰匙握在手裡。準備了好久的小店，今天終於要開門。\n\n這一天，你想陪她帶著什麼心願開始？'},
+    event:{title:'花，還沒有來',text:'花桶排好了，包裝紙也備齊了。訂好的花卻遲遲沒有送到。\n\n小禾看看空蕩蕩的展示架，又看看門外。她原本想像的開幕，不是這個樣子。'}
+  }:stories[chapterId(s)];}
+  function actionsFor(s){return chapterId(s)==='flowers'?actions:stories[chapterId(s)].actions;}
   const wishes=[
     {id:'share',title:'分享喜歡的花',text:'讓路過的人，帶走一點喜歡。'},
     {id:'steady',title:'把日子過踏實',text:'讓這間小店，慢慢站穩腳步。'},
@@ -32,14 +41,25 @@
       {id:'invite',title:'先開門讓人看看',text:'告訴想來坐坐的人，今天沒有鮮花。',mark:'迎',preview:'先有一個見面的地方；有人來，也不代表今天就有生意。'}
     ]
   };
-  function repliesFor(s){return s.edition===2?(branchReplies[s.action]||[]):replies;}
+  function repliesFor(s){
+    if(chapterId(s)!=='flowers')return stories[chapterId(s)]?.branches[s.action]?.cards||[];
+    return s.edition===2?(branchReplies[s.action]||[]):replies;
+  }
   const stages=['opening','action','sealed','response','ending'];
-  function create(variant=0){return {v:1,edition:2,phase:'opening',variant:variant===1?1:0,wish:null,action:null,reply:null,aside:false};}
+  function create(variant=0,chapter='flowers'){
+    if(!chapters.includes(chapter))throw new Error('Unknown chapter');
+    return {v:1,edition:2,...(chapter==='flowers'?{}:{chapter}),phase:'opening',variant:variant===1?1:0,wish:null,action:null,reply:null,aside:false};
+  }
+  function nextChapter(s){
+    if(!valid(s)||s.phase!=='ending')return null;
+    const id=chapters[chapters.indexOf(chapterId(s))+1];return id?create(s.variant,id):null;
+  }
   function valid(s){
     if(!s||s.v!==1||!stages.includes(s.phase)||![0,1].includes(s.variant)||typeof s.aside!=='boolean')return false;
     if(s.edition!==undefined&&s.edition!==2)return false;
+    if(!chapters.includes(chapterId(s))||(chapterId(s)!=='flowers'&&s.edition!==2))return false;
     if(s.wish!==null&&!wishes.some(c=>c.id===s.wish))return false;
-    if(s.action!==null&&!actions.some(c=>c.id===s.action))return false;
+    if(s.action!==null&&!actionsFor(s).some(c=>c.id===s.action))return false;
     if(s.reply!==null&&!repliesFor(s).some(c=>c.id===s.reply))return false;
     const p=stages.indexOf(s.phase);
     return (p===0?s.wish===null&&s.action===null&&s.reply===null:
@@ -51,7 +71,7 @@
     let next={...s};
     if(event.type==='aside'&&s.phase!=='opening'&&s.phase!=='ending')next.aside=!s.aside;
     else if(s.phase==='opening'&&event.type==='wish'&&wishes.some(c=>c.id===event.id)){next.wish=event.id;next.phase='action';}
-    else if(s.phase==='action'&&event.type==='action'&&actions.some(c=>c.id===event.id)){next.action=event.id;next.phase='sealed';}
+    else if(s.phase==='action'&&event.type==='action'&&actionsFor(s).some(c=>c.id===event.id)){next.action=event.id;next.phase='sealed';}
     else if(s.phase==='sealed'&&event.type==='reveal')next.phase='response';
     else if(s.phase==='response'&&event.type==='reply'&&repliesFor(s).some(c=>c.id===event.id)){next.reply=event.id;next.phase='ending';}
     else return s;
@@ -75,6 +95,7 @@
     return {title:open?'門開了，故事還在走':'換個時間，繼續這件事',text:beginnings[s.action]+'\n\n'+scene,after:'這不是原先想像的開幕日。小店的以後，也還沒有答案。'};
   }
   function aftermath(s){
+    if(chapterId(s)!=='flowers')return stories[chapterId(s)].branches[s.action].reveal;
     if(s.edition!==2)return legacyAftermath(s);
     const arrival=s.variant===0?'下午':'明天早上';
     return {
@@ -84,6 +105,7 @@
     }[s.action];
   }
   function ending(s){
+    if(chapterId(s)!=='flowers')return stories[chapterId(s)].branches[s.action].ends[s.reply];
     if(s.edition!==2)return legacyEnding(s);
     const today=s.variant===0,arrival=today?'下午':'明天早上';
     const outcomes={
@@ -105,6 +127,6 @@
     };
     return outcomes[s.action][s.reply];
   }
-  const api={wishes,actions,replies,repliesFor,stages,create,valid,transition,aftermath,ending};
+  const api={wishes,actions,replies,repliesFor,actionsFor,chapters,chapterId,chapterFor,nextChapter,stages,create,valid,transition,aftermath,ending};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.FerryCardsCore=api;
 })(typeof globalThis==='object'?globalThis:this);

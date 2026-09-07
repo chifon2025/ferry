@@ -4,44 +4,49 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#183348">
-  <meta name="description" content="《渡》原創人生故事卡牌。翻開一件小事，選擇眼前的行動，讓故事繼續。">
-  <title>渡 · 一直沒開門的花店</title>
+  <meta name="description" content="《渡》原創花店故事卡牌。三段小事，從延誤、批評到不想錯過的機會，選擇眼前能做的事。手機一屏翻頁遊玩。">
+  <title>渡 · 花店的三段小事</title>
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./cards.css">
+  <script src="./cards-stories.js" defer></script>
   <script src="./cards-core.js" defer></script>
+  <script src="./cards-layout.js" defer></script>
   <script src="./cards.js" defer></script>
   <script src="./pwa-update.js" defer></script>
 </head>
 <body>
 <main class="game" id="game">
   <header class="top"><div class="brand"><strong>渡</strong><span>小事成章</span></div><button id="menuOpen" type="button" aria-label="開啟功能" aria-haspopup="dialog">☰</button></header>
-  <div class="chapter"><p>一直沒開門的花店</p><span id="stageLabel">開門之前</span></div>
+  <div class="chapter"><p id="chapterName">一直沒開門的花店</p><span id="stageLabel">開門之前</span></div>
+  <div class="stage-area" id="stageArea">
   <div class="scene-wrap" id="sceneWrap">
     <article class="scene" aria-labelledby="sceneTitle">
       <img class="art" src="./art/flower-shop.webp" alt="晨光裡的花店，花桶還空著，門邊有一盆綠色植物。" width="900" height="600">
-      <div class="scene-copy"><p class="eyebrow" id="cardType">原創故事</p><h1 id="sceneTitle" tabindex="-1">今天，花店要開門了</h1><p class="story" id="storyText">小禾把鑰匙握在手裡。準備了好久的小店，今天終於要開門。
+      <div class="scene-copy"><div class="reader-head"><p class="eyebrow" id="cardType">原創故事</p><button id="backStory" class="back-story" hidden>回故事</button></div><h1 id="sceneTitle" tabindex="-1">今天，花店要開門了</h1><div class="reader" id="reader"><p class="story" id="storyText">小禾把鑰匙握在手裡。準備了好久的小店，今天終於要開門。
 
-這一天，你想陪她帶著什麼心願開始？</p><p class="after" id="afterText" hidden></p></div>
+這一天，你想陪她帶著什麼心願開始？</p></div><nav class="pager" aria-label="故事翻頁"><button id="pagePrev" aria-label="上一頁">←</button><span id="pageCount" role="status" aria-live="polite">1 / 1</span><button id="pageNext" aria-label="下一頁">→</button></nav><p class="sr-only" id="afterText" hidden></p></div>
     </article>
   </div>
-  <div class="kept" id="kept" hidden><span class="wish-tag" id="wishTag"></span><button class="thought" id="thought" aria-pressed="false" hidden><span id="thoughtText"></span><small id="thoughtHint"></small></button></div>
-  <p class="carried" id="carried" hidden></p>
   <button class="deck" id="deck" hidden><b>下一張，會是什麼？</b><small>點一下，翻開後續</small></button>
-  <section class="choices-area" id="choicesArea" aria-labelledby="instruction"><p class="instruction" id="instruction">選一張心願牌，陪小禾開始這一天。</p><div class="hand" id="hand" data-count="3"></div><p class="choice-preview" id="choicePreview" role="status" aria-live="polite" hidden></p><button class="confirm" id="confirm" disabled>先選一張牌</button></section>
-  <p class="played-path" id="playedPath" hidden></p>
-  <div class="ending-actions" id="endingActions" hidden><button class="replay" id="replay">換一種走法</button><button class="quiet-button" id="rest">先停在這裡</button></div>
-  <p class="rest-note" id="restNote" hidden>故事先留在這裡。<br>想回來時，再翻開就好。</p>
+  </div>
+  <div class="kept" id="kept" hidden><span class="wish-tag" id="wishTag"></span><button class="thought" id="thought" aria-pressed="false" hidden><span id="thoughtText"></span><small id="thoughtHint"></small></button></div>
+  <p class="sr-only" id="carried" hidden></p>
+  <section class="choices-area" id="choicesArea" aria-labelledby="instruction"><p class="sr-only" id="instruction">選一張心願牌，陪小禾開始這一天。</p><div class="hand" id="hand" data-count="3"></div><p class="sr-only" id="choicePreview" hidden></p><button class="confirm" id="confirm" disabled>先選一張牌</button></section>
+  <p class="sr-only" id="playedPath" hidden></p>
+  <div class="ending-actions" id="endingActions" hidden><button class="next-chapter" id="nextChapter" hidden>下一段故事</button><div class="ending-secondary"><button class="replay" id="replay">換一種走法</button><button class="quiet-button" id="rest">先停在這裡</button></div></div>
+  <p class="sr-only" id="restNote" hidden>故事先留在這裡。想回來時，再翻開就好。</p>
   <p class="save-status" id="saveStatus" role="status"></p><button class="load-latest" id="loadLatest" hidden>讀取另一頁的進度</button>
-  <p class="footer-note" id="footerNote">選牌，再翻開後續。隨時可以離開，進度留在這台裝置。</p>
+  <p class="sr-only" id="footerNote">選牌，再翻開後續。隨時可以離開，進度留在這台裝置。</p>
   <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
 </main>
 <dialog id="menu" aria-labelledby="menuTitle">
   <div class="menu-head"><h2 id="menuTitle">留一點空間</h2><button id="menuClose" aria-label="關閉功能">×</button></div>
   <button class="menu-row" id="install">安裝手機 App</button><p class="menu-status" id="installStatus">放到主畫面，下次繼續這一頁。</p>
   <button class="menu-row" id="btnUpdate">檢查更新</button><p class="menu-status" id="updateStatus" role="status">連線時自動檢查新版</p>
-  <details class="about"><summary>關於這個故事</summary><p>人物與情節全部自創，不是萊斯特的生平，也不是自傳或課程的原文。設計靈感來自向內看見、鬆開對結果的緊抓，以及做好眼前能做的事。</p><p>卡牌不判定你是否平靜。把心聲放在旁邊，或仍留在手邊，都不會改變事件的機率。它也不代表忽略責任、保證願望成真，或代替專業協助。</p><p>這次先試一段故事，沒有配樂、水聲、倒數或分數。進度只存這台裝置，不上傳，也不讀寫先前版本的遊戲紀錄。</p></details>
+  <label class="chapter-picker" for="chapterChoice">選一段故事</label><select id="chapterChoice"><option value="flowers">一 · 一直沒開門的花店</option><option value="review">二 · 一句不好看的評語</option><option value="order">三 · 不想錯過的訂單</option></select><p class="menu-status">開始所選章節，會取代目前這一段的遊玩進度。</p><button class="menu-row" id="chapterStart">開始這章</button>
+  <details class="about"><summary>關於這個故事</summary><p>人物與情節全部自創，不是萊斯特的生平，也不是自傳或課程的原文。設計靈感來自向內看見、鬆開對結果的緊抓，以及做好眼前能做的事。</p><p>卡牌不判定你是否平靜。把心聲放在旁邊，或仍留在手邊，都不會改變事件的機率。它也不代表忽略責任、保證願望成真，或代替專業協助。</p><p>三段花店故事，沒有配樂、水聲、倒數或分數。進度只存這台裝置，不上傳，也不讀寫先前版本的遊戲紀錄。</p></details>
 </dialog>
 <noscript><p>請開啟 JavaScript，才能選牌與翻開故事。</p></noscript>
 </body>

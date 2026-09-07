@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),C=require('../cards-core.js'),KEY='du_ferry_cards_v1';
+const root=path.resolve(__dirname,'..'),C=require('../cards-core.js'),L=require('../cards-layout.js'),KEY='du_ferry_cards_v1';
 function finish(wish,action,reply,variant,aside=false){let s=C.create(variant);for(const e of [{type:'wish',id:wish},{type:'action',id:action},{type:'reveal'},...(aside?[{type:'aside'}]:[]),{type:'reply',id:reply}])s=C.transition(s,e);return s;}
 test('all wishes, actions, replies and delivery states finish coherently without modifying input',()=>{
   let paths=0;for(const w of C.wishes)for(const a of C.actions)for(const r of C.repliesFor({edition:2,action:a.id}))for(const v of [0,1]){
@@ -60,10 +60,12 @@ function setup(values={},options={}){
     classList:{add:n=>classes.add(n),remove:n=>classes.delete(n),toggle(n,force){if(force===undefined? !classes.has(n):force)classes.add(n);else classes.delete(n);}},
     setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;this.emit('close');}});}
   const elements={},html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
+  elements.reader.clientHeight=options.readerHeight||160;
+  Object.defineProperty(elements.storyText,'scrollHeight',{get(){return Math.ceil(Array.from(this.textContent).length/(options.lineChars||18))*26;}});
   const data=new Map(Object.entries(values)),reads=[],writes=[],timers=new Map();let timer=0;
   const localStorage={getItem(k){reads.push(k);if(options.readFails)throw new Error('blocked');return data.get(k)??null;},setItem(k,v){if(options.writeFails)throw new Error('quota');writes.push([k,v]);data.set(k,v);}};
   const document=Object.assign(events(),{getElementById:id=>elements[id],createElement:()=>element()});
-  const window=Object.assign(events(),{FerryCardsCore:C,scrollTo(){}});
+  const window=Object.assign(events(),{FerryCardsCore:C,FerryCardLayout:L,scrollTo(){}});
   vm.runInNewContext(fs.readFileSync(path.join(root,'cards.js'),'utf8'),{window,document,localStorage,navigator:{userAgent:options.ua||'iPhone'},Math:Object.assign(Object.create(Math),{random:()=>.2}),
     setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id)});
   async function choose(index){await elements.hand.children[index].emit('click');await elements.confirm.emit('click');}
@@ -140,4 +142,38 @@ test('cross-tab event pauses writing; native install and platform fallback remai
   await s.window.emit('appinstalled');assert.match(s.elements.installStatus.textContent,/已加入/);
   const iphone=setup();await iphone.elements.install.emit('click');assert.match(iphone.elements.installStatus.textContent,/Safari/);
   const android=setup({}, {ua:'Android'});await android.elements.install.emit('click');assert.match(android.elements.installStatus.textContent,/Chrome/);
+});
+test('page arrows expose all text without advancing story or changing saves',async()=>{
+  const s=setup({}, {readerHeight:52,lineChars:9}),startTitle=s.elements.sceneTitle.textContent;
+  let text=s.elements.storyText.textContent,steps=0;
+  while(!s.elements.pageNext.disabled){await s.elements.pageNext.emit('click');text+=s.elements.storyText.textContent;assert.ok(++steps<100);}
+  assert.equal(text,C.chapterFor(C.create()).opening.text);assert.equal(s.writes.length,0);assert.equal(s.elements.sceneTitle.textContent,startTitle);
+  assert.equal(s.elements.pageNext.disabled,true);await s.elements.pagePrev.emit('click');assert.equal(s.elements.pageNext.disabled,false);
+  await s.elements.hand.children[0].emit('click');assert.equal(s.elements.backStory.hidden,false);assert.equal(s.elements.confirm.disabled,false);
+  await s.elements.backStory.emit('click');assert.equal(s.elements.sceneTitle.textContent,startTitle);assert.equal(s.elements.confirm.disabled,false);
+  await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).wish,'share');
+});
+test('viewport changes re-page a selected card without clearing selection or writing',async()=>{
+  const s=setup({}, {readerHeight:78,lineChars:9});await s.choose(0);await s.choose(0);await s.elements.deck.emit('click');
+  await s.elements.hand.children[2].emit('click');await s.elements.pageNext.emit('click');const writes=s.writes.length;
+  s.elements.reader.clientHeight=26;await s.window.emit('resize');for(const fn of s.timers.values())fn();
+  assert.equal(s.elements.confirm.disabled,false);assert.equal(s.writes.length,writes);assert.ok(Array.from(s.elements.storyText.textContent).length<=9);
+  await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).reply,'pickup');
+});
+test('all new UI routes resume correctly and can move through the full chapter sequence',async()=>{
+  for(const chapter of ['review','order'])for(let a=0;a<3;a++)for(let r=0;r<2;r++){
+    const s=setup({[KEY]:JSON.stringify(C.create(1,chapter))});await s.choose(1);await s.choose(a);await s.elements.deck.emit('click');await s.choose(r);
+    const done=JSON.parse(s.data.get(KEY));assert.equal(done.chapter,chapter);assert.equal(done.phase,'ending');
+    const restored=setup(Object.fromEntries(s.data));assert.equal(restored.elements.sceneTitle.textContent,C.ending(done).title);
+    if(chapter==='review'){assert.equal(restored.elements.nextChapter.hidden,false);await restored.elements.nextChapter.emit('click');assert.equal(JSON.parse(restored.data.get(KEY)).chapter,'order');}
+    else assert.equal(restored.elements.nextChapter.hidden,true);
+    await s.elements.replay.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).chapter,chapter);assert.equal(JSON.parse(s.data.get(KEY)).phase,'opening');
+  }
+});
+test('chapter selection needs explicit start and respects concurrent-save protection',async()=>{
+  const s=setup();await s.choose(0);await s.elements.menuOpen.emit('click');const original=s.data.get(KEY);
+  s.elements.chapterChoice.value='review';assert.equal(s.data.get(KEY),original);
+  await s.elements.chapterStart.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).chapter,'review');assert.equal(s.elements.menu.open,false);
+  await s.elements.menuOpen.emit('click');s.elements.chapterChoice.value='order';
+  const remote=JSON.stringify(C.create(1));s.data.set(KEY,remote);await s.elements.chapterStart.emit('click');assert.equal(s.data.get(KEY),remote);assert.equal(s.elements.loadLatest.hidden,false);
 });
