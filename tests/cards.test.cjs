@@ -81,15 +81,15 @@ test('selection previews a card, confirmation advances, then a separate flip rev
   assert.equal(s.elements.carried.hidden,false);assert.match(s.elements.carried.textContent,/取少量花材/);
   const writes=s.writes.length;await s.elements.hand.children[2].emit('click');assert.equal(s.writes.length,writes);
   assert.equal(s.elements.choicePreview.hidden,false);assert.match(s.elements.choicePreview.textContent,/暫時關著/);
-  await s.elements.thought.emit('click');assert.equal(s.elements.choicePreview.hidden,false);
+  await s.elements.thought.emit('click');await s.elements.backStory.emit('click');assert.equal(s.elements.choicePreview.hidden,false);
   await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).reply,'pickup');
   assert.equal(s.elements.carried.hidden,true);assert.equal(s.elements.playedPath.hidden,false);assert.match(s.elements.playedPath.textContent,/先問清楚 → 去取現有花材/);
 });
-test('thought can be set aside and taken back without discarding a selected action or wish',async()=>{
+test('inner cards can be opened and closed without discarding a selected action or wish',async()=>{
   const s=setup();await s.choose(0);await s.elements.hand.children[1].emit('click');
-  await s.elements.thought.emit('click');assert.equal(s.elements.thought.attrs['aria-pressed'],'true');assert.equal(s.elements.confirm.disabled,false);
+  const writes=s.writes.length;await s.elements.thought.emit('click');assert.equal(s.elements.thought.attrs['aria-pressed'],'true');assert.equal(s.elements.confirm.disabled,true);
   await s.elements.thought.emit('click');assert.equal(s.elements.thought.attrs['aria-pressed'],'false');
-  await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,'borrow');assert.equal(JSON.parse(s.data.get(KEY)).wish,'share');
+  assert.equal(s.writes.length,writes);await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,'borrow');assert.equal(JSON.parse(s.data.get(KEY)).wish,'share');
 });
 test('all three UI action branches can finish, rest and replay the same external circumstances',async()=>{
   for(let action=0;action<3;action++)for(let reply=0;reply<3;reply++){
@@ -166,7 +166,7 @@ test('all new UI routes resume correctly and can move through the full chapter s
     const done=JSON.parse(s.data.get(KEY));assert.equal(done.chapter,chapter);assert.equal(done.phase,'ending');
     const restored=setup(Object.fromEntries(s.data));assert.equal(restored.elements.sceneTitle.textContent,C.ending(done).title);
     if(chapter==='review'){assert.equal(restored.elements.nextChapter.hidden,false);await restored.elements.nextChapter.emit('click');assert.equal(JSON.parse(restored.data.get(KEY)).chapter,'order');}
-    else assert.equal(restored.elements.nextChapter.hidden,true);
+    else {assert.equal(restored.elements.nextChapter.hidden,false);await restored.elements.nextChapter.emit('click');assert.equal(JSON.parse(restored.data.get(KEY)).chapter,'money');}
     await s.elements.replay.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).chapter,chapter);assert.equal(JSON.parse(s.data.get(KEY)).phase,'opening');
   }
 });
@@ -176,4 +176,46 @@ test('chapter selection needs explicit start and respects concurrent-save protec
   await s.elements.chapterStart.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).chapter,'review');assert.equal(s.elements.menu.open,false);
   await s.elements.menuOpen.emit('click');s.elements.chapterChoice.value='order';
   const remote=JSON.stringify(C.create(1));s.data.set(KEY,remote);await s.elements.chapterStart.emit('click');assert.equal(s.data.get(KEY),remote);assert.equal(s.elements.loadLatest.hidden,false);
+});
+test('all chapters expose both sides without recording feelings or requiring a positive report',async()=>{
+  for(const chapter of C.chapters){
+    const initial=C.create(0,chapter),profile=C.reflectionFor(initial),s=setup({[KEY]:JSON.stringify(initial)});
+    const readAll=async()=>{let text=s.elements.storyText.textContent;while(!s.elements.pageNext.disabled){await s.elements.pageNext.emit('click');text+=s.elements.storyText.textContent;}return text;};
+    await s.choose(0);await s.elements.hand.children[0].emit('click');const raw=s.data.get(KEY),writes=s.writes.length;
+    await s.elements.thought.emit('click');assert.match(await readAll(),new RegExp(profile.want.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    await s.choose(1);assert.equal(s.elements.sceneTitle.textContent,'另一面，想推開什麼？');assert.ok((await readAll()).includes(profile.avoid));
+    await s.choose(1);assert.equal(s.elements.sceneTitle.textContent,'此刻，有沒有不一樣？');
+    await s.choose(1);assert.match(await readAll(),/感覺還是一樣，也能繼續/);assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,writes);
+    assert.equal(s.elements.confirm.disabled,false);
+    await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,C.actionsFor(initial)[0].id);
+  }
+});
+
+test('every added route plays through the UI controller simulation, restores, and reaches the next chapter',async()=>{
+  for(const chapter of C.chapters.slice(3))for(let a=0;a<2;a++)for(let r=0;r<2;r++){
+    const s=setup({[KEY]:JSON.stringify(C.create(0,chapter))});assert.equal(s.elements.chapterChoice.children.length,15);
+    await s.choose(0);await s.choose(a);await s.elements.deck.emit('click');await s.choose(r);
+    const state=JSON.parse(s.data.get(KEY)),copy=setup(Object.fromEntries(s.data));
+    assert.equal(state.phase,'ending');assert.equal(copy.elements.sceneTitle.textContent,C.ending(state).title);
+    assert.equal(copy.elements.nextChapter.hidden,chapter==='ordinary');
+    if(chapter!=='ordinary'){await copy.elements.nextChapter.emit('click');assert.equal(JSON.parse(copy.data.get(KEY)).chapter,C.chapterId(C.nextChapter(state)));}
+  }
+});
+
+test('inner cards can exit from either side and sealed state without advancing; reload drops only transient practice',async()=>{
+  for(const step of [0,1,2]){
+    const s=setup();await s.choose(0);await s.choose(1);const raw=s.data.get(KEY),writes=s.writes.length;
+    await s.elements.thought.emit('click');for(let i=0;i<step;i++)await s.choose(0);
+    await s.elements.backStory.emit('click');assert.equal(s.elements.deck.hidden,false);assert.equal(s.elements.choicesArea.hidden,true);
+    assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,writes);
+    await s.elements.thought.emit('click');const copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.deck.hidden,false);
+  }
+});
+
+test('practice cannot bypass a concurrent save and never blocks chapter changes',async()=>{
+  const s=setup();await s.choose(0);await s.elements.thought.emit('click');
+  const remote=JSON.stringify(C.create(1,'goal'));s.data.set(KEY,remote);await s.window.emit('storage',{key:KEY});
+  await s.choose(0);assert.equal(s.data.get(KEY),remote);await s.elements.loadLatest.emit('click');assert.equal(s.elements.thought.hidden,true);
+  await s.choose(0);await s.elements.thought.emit('click');await s.elements.menuOpen.emit('click');s.elements.chapterChoice.value='ordinary';await s.elements.chapterStart.emit('click');
+  assert.equal(JSON.parse(s.data.get(KEY)).chapter,'ordinary');assert.equal(s.elements.hand.children.length,3);assert.equal(s.elements.thought.hidden,true);
 });

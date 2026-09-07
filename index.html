@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#183348">
-  <meta name="description" content="《渡》原創花店故事卡牌。三段小事，從延誤、批評到不想錯過的機會，選擇眼前能做的事。手機一屏翻頁遊玩。">
-  <title>渡 · 花店的三段小事</title>
+  <meta name="description" content="《渡》十五段原創花店故事。翻開想要與不想要，留一點空間，再選眼前的一步。手機直式一屏卡牌。">
+  <title>渡 · 花店日記</title>
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./cards.css">
+  <script src="./cards-journey.js" defer></script>
   <script src="./cards-stories.js" defer></script>
   <script src="./cards-core.js" defer></script>
   <script src="./cards-layout.js" defer></script>
@@ -45,8 +46,8 @@
   <div class="menu-head"><h2 id="menuTitle">留一點空間</h2><button id="menuClose" aria-label="關閉功能">×</button></div>
   <button class="menu-row" id="install">安裝手機 App</button><p class="menu-status" id="installStatus">放到主畫面，下次繼續這一頁。</p>
   <button class="menu-row" id="btnUpdate">檢查更新</button><p class="menu-status" id="updateStatus" role="status">連線時自動檢查新版</p>
-  <label class="chapter-picker" for="chapterChoice">選一段故事</label><select id="chapterChoice"><option value="flowers">一 · 一直沒開門的花店</option><option value="review">二 · 一句不好看的評語</option><option value="order">三 · 不想錯過的訂單</option></select><p class="menu-status">開始所選章節，會取代目前這一段的遊玩進度。</p><button class="menu-row" id="chapterStart">開始這章</button>
-  <details class="about"><summary>關於這個故事</summary><p>人物與情節全部自創，不是萊斯特的生平，也不是自傳或課程的原文。設計靈感來自向內看見、鬆開對結果的緊抓，以及做好眼前能做的事。</p><p>卡牌不判定你是否平靜。把心聲放在旁邊，或仍留在手邊，都不會改變事件的機率。它也不代表忽略責任、保證願望成真，或代替專業協助。</p><p>三段花店故事，沒有配樂、水聲、倒數或分數。進度只存這台裝置，不上傳，也不讀寫先前版本的遊戲紀錄。</p></details>
+  <label class="chapter-picker" for="chapterChoice">十五段故事 · 可任選</label><select id="chapterChoice"><option value="flowers">一直沒開門的花店</option></select><p class="menu-status">開始所選章節，會取代目前這一段的遊玩進度。不必照順序，也不用先通關。</p><button class="menu-row" id="chapterStart">開始這章</button>
+  <details class="about"><summary>怎麼玩這段故事</summary><p>選心願，翻開事件，再選小禾接下來怎麼做。想看看心裡發生什麼時，點「想要與不想要」：看看想抓住的，再看看想推開的，最後回到眼前的一步。</p><p>可以選「試著鬆一點」，也可以選「現在還不行」或隨時回故事。沒有正確情緒，不必重複到平靜才准繼續；這些選擇不會換到好運或更好的結局。</p><p>人物、對話與情節全部原創，不是萊斯特生平，也不是《豐盛之書》的逐章重製。只將讀到的部分觀念轉化為日常體驗；沒有搬用書中案例、量表或課程原文。</p><p>放下的是心裡的緊抓，不是必要的安全、界線、照顧或責任。遊戲不保證願望成真，不提供醫療或財務建議。若情境讓你不舒服，可以停下或換章。</p><p>十五段故事，沒有配樂、水聲、倒數、分數或打卡。進度只存這台裝置；內心卡的選擇不記錄、不上傳，也不讀寫先前版本的遊戲紀錄。</p></details>
 </dialog>
 <noscript><p>請開啟 JavaScript，才能選牌與翻開故事。</p></noscript>
 </body>

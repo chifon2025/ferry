@@ -26,7 +26,7 @@ test('chapters advance only at endings, replay state is independent, and unknown
   assert.equal(C.nextChapter(C.create()),null);
   let first=C.create();for(const event of [{type:'wish',id:'share'},{type:'action',id:'call'},{type:'reveal'},{type:'reply',id:'pickup'}])first=C.transition(first,event);
   const next=C.nextChapter(first);assert.equal(next.chapter,'review');assert.equal(next.phase,'opening');assert.equal(first.phase,'ending');
-  assert.equal(C.nextChapter(finish('review','ask','remake')).chapter,'order');assert.equal(C.nextChapter(finish('order','count','eight')),null);
+  assert.equal(C.nextChapter(finish('review','ask','remake')).chapter,'order');assert.equal(C.nextChapter(finish('order','count','eight')).chapter,'money');assert.equal(C.nextChapter(finish('ordinary','path0','reply0')),null);
   for(const state of [{...C.create(),chapter:'unknown'},{...C.create(),chapter:null},{...C.create(),chapter:'__proto__'},{...C.create(),chapter:'review',edition:undefined}])assert.equal(C.valid(state),false);
   assert.throws(()=>C.create(0,'nope'),/Unknown chapter/);
   const review=C.transition(C.create(0,'review'),{type:'wish',id:'share'});

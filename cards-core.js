@@ -1,11 +1,13 @@
 /* Original fiction and deterministic branching; no scores or spiritual rankings. */
 (function(root){
   'use strict';
-  const stories=typeof module==='object'&&module.exports?require('./cards-stories.js'):root.FerryCardStories;
-  const chapters=['flowers','review','order'];
+  const journey=typeof module==='object'&&module.exports?require('./cards-journey.js'):root.FerryCardJourney;
+  const stories={...(typeof module==='object'&&module.exports?require('./cards-stories.js'):root.FerryCardStories),...journey.stories};
+  const chapters=['flowers','review','order',...Object.keys(journey.stories)];
+  function reflectionFor(s){return journey.profiles[chapterId(s)];}
   function chapterId(s){return s.chapter===undefined?'flowers':s.chapter;}
   function chapterFor(s){return chapterId(s)==='flowers'?{
-    title:'一直沒開門的花店',thought:'一定要照原計畫才行。',
+    title:'一直沒開門的花店',thought:'一定要照原計畫才行。',release:'不必照原計畫，也能繼續',
     opening:{title:'今天，花店要開門了',text:'小禾把鑰匙握在手裡。準備了好久的小店，今天終於要開門。\n\n這一天，你想陪她帶著什麼心願開始？'},
     event:{title:'花，還沒有來',text:'花桶排好了，包裝紙也備齊了。訂好的花卻遲遲沒有送到。\n\n小禾看看空蕩蕩的展示架，又看看門外。她原本想像的開幕，不是這個樣子。'}
   }:stories[chapterId(s)];}
@@ -127,6 +129,6 @@
     };
     return outcomes[s.action][s.reply];
   }
-  const api={wishes,actions,replies,repliesFor,actionsFor,chapters,chapterId,chapterFor,nextChapter,stages,create,valid,transition,aftermath,ending};
+  const api={wishes,actions,replies,repliesFor,actionsFor,chapters,chapterId,chapterFor,reflectionFor,nextChapter,stages,create,valid,transition,aftermath,ending};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.FerryCardsCore=api;
 })(typeof globalThis==='object'?globalThis:this);
