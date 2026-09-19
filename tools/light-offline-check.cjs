@@ -8,7 +8,7 @@ const assert=require('node:assert/strict');
     await page.addInitScript(()=>{localStorage.setItem('du_ferry_cards_v1','original flower record');localStorage.setItem('du_ferry_audio_v2','off');});
     await page.goto((process.argv[2]||'http://127.0.0.1:8138/')+'?offline-test');
     await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-    const cached=await page.evaluate(async()=>{const names=await caches.keys();return {names,files:(await (await caches.open(names.find(n=>n.endsWith('light-v1')))).keys()).map(r=>new URL(r.url).pathname)};});
+    const cached=await page.evaluate(async()=>{const names=await caches.keys();return {names,files:(await (await caches.open(names.find(n=>n.endsWith('light-v2')))).keys()).map(r=>new URL(r.url).pathname)};});
     assert.equal(cached.files.length,12);assert.ok(cached.files.some(f=>f.endsWith('light-story.js')));assert.ok(!cached.files.some(f=>f.includes('flower')));
     await page.locator('#confirm').click();await page.locator('#hand button').last().click();await page.locator('#confirm').click();
     const title=await page.locator('#sceneTitle').textContent(),raw=await page.evaluate(()=>localStorage.getItem('du_ferry_light_v1'));

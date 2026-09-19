@@ -46,13 +46,14 @@ function setup(values={},options={}){
   const events=()=>({handlers:{},addEventListener(k,f){(this.handlers[k]??=[]).push(f);},async emit(k,e={}){for(const f of this.handlers[k]||[])await f({preventDefault(){},...e});}});
   let active;function element(){const classes=new Set();return Object.assign(events(),{children:[],attrs:{},dataset:{},textContent:'',hidden:false,disabled:false,
     classList:{add(...names){names.forEach(n=>classes.add(n));},remove(...names){names.forEach(n=>classes.delete(n));},contains:n=>classes.has(n)},
-    setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;}});}
+    style:{values:{},setProperty(k,v){this.values[k]=v;}},setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;}});}
   const elements={},html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
   elements.reader.clientHeight=options.readerHeight||160;
   Object.defineProperty(elements.storyText,'scrollHeight',{get(){return Math.ceil(Array.from(this.textContent).length/(options.lineChars||18))*26;}});
   const data=new Map(Object.entries(values)),reads=[],writes=[],timers=new Map();let timer=0;
   const localStorage={getItem(k){reads.push(k);if(options.readFails)throw new Error('blocked');return data.get(k)??null;},setItem(k,v){if(options.writeFails)throw new Error('quota');writes.push([k,v]);data.set(k,v);}};
-  const document=Object.assign(events(),{getElementById:id=>elements[id],createElement:element}),window=Object.assign(events(),{FerryLightCore:C,FerryCardLayout:L});
+  const document=Object.assign(events(),{getElementById:id=>elements[id],createElement:element}),window=Object.assign(events(),{FerryLightCore:C,FerryCardLayout:L,innerHeight:options.innerHeight});
+  if(options.visualHeight)window.visualViewport=Object.assign(events(),{height:options.visualHeight,scale:1});
   vm.runInNewContext(fs.readFileSync(path.join(root,'light.js'),'utf8'),{window,document,localStorage,navigator:{userAgent:options.ua||'iPhone'},setTimeout:f=>{timers.set(++timer,f);return timer;},clearTimeout:i=>timers.delete(i)});
   return {elements,data,reads,writes,window,timers,get active(){return active;},async choose(i){await elements.hand.children[i].emit('click');await elements.confirm.emit('click');},async readAll(){let text=elements.storyText.textContent;while(!elements.pageNext.disabled){await elements.pageNext.emit('click');text+=elements.storyText.textContent;}return text;}};
 }
@@ -105,6 +106,17 @@ test('viewport resize, reading arrows and pending selection do not write progres
   await s.elements.confirm.emit('click');await s.elements.hand.children[1].emit('click');const raw=s.data.get(KEY);
   s.elements.reader.clientHeight=26;await s.window.emit('resize');for(const fn of s.timers.values())fn();assert.ok(Array.from(s.elements.storyText.textContent).length<=9);
   assert.equal(s.data.get(KEY),raw);assert.equal(s.elements.confirm.disabled,false);await s.elements.confirm.emit('click');assert.equal(JSON.parse(s.data.get(KEY)).action,'a1');
+});
+test('visible mobile height, return from background and rotation resize layout without saving or shrinking pinch zoom',async()=>{
+  const s=setup({}, {innerHeight:844,visualHeight:620});
+  assert.equal(s.elements.game.style.values['--app-height'],'620px');assert.equal(s.elements.menu.style.values['--app-height'],'620px');assert.equal(s.elements.game.dataset.compact,'true');
+  await s.elements.confirm.emit('click');await s.elements.hand.children[1].emit('click');const raw=s.data.get(KEY),writes=s.writes.length;
+  s.window.visualViewport.height=500;await s.window.visualViewport.emit('resize');for(const fn of s.timers.values())fn();assert.equal(s.elements.game.style.values['--app-height'],'500px');
+  s.window.visualViewport.scale=2;s.window.visualViewport.height=250;await s.window.visualViewport.emit('resize');for(const fn of s.timers.values())fn();assert.equal(s.elements.game.style.values['--app-height'],'500px');
+  s.window.visualViewport.scale=1;s.window.visualViewport.height=760;await s.window.emit('pageshow');for(const fn of s.timers.values())fn();assert.equal(s.elements.game.style.values['--app-height'],'760px');assert.equal(s.elements.game.dataset.compact,'false');
+  s.window.innerHeight=390;await s.window.emit('orientationchange');for(const fn of s.timers.values())fn();assert.equal(s.elements.game.style.values['--app-height'],'390px');
+  assert.equal(s.data.get(KEY),raw);assert.equal(s.writes.length,writes);assert.equal(s.elements.confirm.disabled,false);
+  const fallback=setup({}, {innerHeight:568});assert.equal(fallback.elements.game.style.values['--app-height'],'568px');
 });
 test('PWA install prompt and iPhone/Android fallbacks remain available',async()=>{
   for(const ua of ['iPhone','Android']){const s=setup({}, {ua});await s.elements.install.emit('click');assert.match(s.elements.installStatus.textContent,ua==='iPhone'?/Safari/:/Chrome/);}

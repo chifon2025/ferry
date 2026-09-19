@@ -29,7 +29,18 @@
     pages=L.paginate(readerText,text=>{$('storyText').textContent=text;return $('storyText').scrollHeight<=height;});
     pageIndex=L.pageAt(pages,offset);paintPage();
   }
-  function scheduleLayout(){clearTimeout(layoutTimer);layoutTimer=setTimeout(fitReader,30);}
+  function syncViewport(){
+    const viewport=window.visualViewport;
+    // Pinch zoom is a magnification, not a new layout height. Keep it usable.
+    if(viewport?.scale&&Math.abs(viewport.scale-1)>.05)return;
+    const heights=[window.innerHeight,viewport?.height].filter(n=>Number.isFinite(n)&&n>0);
+    if(!heights.length)return;
+    const height=Math.floor(Math.min(...heights));
+    $('game').style.setProperty('--app-height',height+'px');
+    $('menu').style.setProperty('--app-height',height+'px');
+    $('game').dataset.compact=String(height<640);
+  }
+  function scheduleLayout(){clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>{syncViewport();fitReader();},30);}
   function showScene(scene,label,back=false){
     readerText=scene.text;pages=[{text:readerText,start:0}];pageIndex=0;
     $('sceneTitle').textContent=scene.title;$('stageLabel').textContent=label;$('backStory').hidden=!back;
@@ -111,7 +122,8 @@
   $('rest').addEventListener('click',rest);
   $('pagePrev').addEventListener('click',()=>{if(pageIndex>0){pageIndex--;paintPage();}});
   $('pageNext').addEventListener('click',()=>{if(pageIndex<pages.length-1){pageIndex++;paintPage();}});
-  window.addEventListener('resize',scheduleLayout);window.visualViewport?.addEventListener('resize',scheduleLayout);
+  window.addEventListener('resize',scheduleLayout);window.addEventListener('orientationchange',scheduleLayout);window.addEventListener('pageshow',scheduleLayout);
+  window.visualViewport?.addEventListener('resize',scheduleLayout);window.visualViewport?.addEventListener('scroll',scheduleLayout);
   if(typeof ResizeObserver==='function')new ResizeObserver(scheduleLayout).observe($('reader'));
   document.fonts?.ready.then(scheduleLayout);
   $('menuOpen').addEventListener('click',()=>{$('chapterChoice').value=state.chapter;$('menu').showModal();});
@@ -128,5 +140,5 @@
     if(installPrompt){const prompt=installPrompt;installPrompt=null;try{await prompt.prompt();const c=await prompt.userChoice;$('installStatus').textContent=c.outcome==='accepted'?'正在加入主畫面。':'這次先不安裝，仍可繼續旅程。';}catch(_){$('installStatus').textContent='請從瀏覽器選單選擇加入主畫面。';}}
     else $('installStatus').textContent=/iPhone|iPad|iPod/.test(navigator.userAgent)?'請用 Safari 開啟，點「分享」→「加入主畫面」。':'請用手機 Chrome 選單，選「安裝應用程式」或「加入主畫面」。';
   });
-  restore();render();
+  syncViewport();restore();render();
 })();

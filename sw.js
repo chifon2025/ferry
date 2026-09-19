@@ -1,7 +1,7 @@
 /* Card story offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'light-v1';
+const CACHE_VERSION=CACHE_PREFIX+'light-v2';
 const APP_SHELL=['./','./index.html','./light.css','./light-story.js','./light-core.js','./cards-layout.js','./light.js','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
 self.addEventListener('install',event=>{
