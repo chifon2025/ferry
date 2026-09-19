@@ -1,0 +1,132 @@
+(() => {
+  'use strict';
+  const C=window.FerryLightCore,L=window.FerryCardLayout,$=id=>document.getElementById(id),KEY='du_ferry_light_v1';
+  let state=C.create(),lastRaw=null,writable=true,conflict=false,selected=null,view=null,installPrompt=null;
+  let readerText='',pages=[{text:'',start:0}],pageIndex=0,layoutTimer=0;
+  function notice(text){$('saveStatus').textContent=text;$('saveNotice').hidden=false;}
+  function restore(){
+    try{
+      lastRaw=localStorage.getItem(KEY);
+      if(lastRaw!==null){const parsed=JSON.parse(lastRaw);if(!C.valid(parsed))throw new Error('format');state=parsed;}
+    }catch(_){writable=false;notice('無法讀取或辨識這份新旅程進度。本次可試玩，但不會覆寫原資料。');}
+  }
+  function save(next){
+    if(conflict)return false;
+    if(!writable){state=next;return true;}
+    try{
+      if(localStorage.getItem(KEY)!==lastRaw){conflict=true;notice('另一個分頁已更新旅程。請先讀取最新進度，再繼續。');$('loadLatest').hidden=false;return false;}
+      const raw=JSON.stringify(next);localStorage.setItem(KEY,raw);lastRaw=raw;state=next;return true;
+    }catch(_){writable=false;state=next;notice('這台裝置暫時無法保存。仍可試玩，但關閉後可能需要重新開始。');return true;}
+  }
+  function paintPage(){
+    $('storyText').textContent=pages[pageIndex].text;
+    $('pageCount').textContent=(pageIndex+1)+' / '+pages.length;
+    $('pagePrev').disabled=pageIndex===0;$('pageNext').disabled=pageIndex===pages.length-1;
+  }
+  function fitReader(){
+    const height=$('reader').clientHeight;if(!height)return;
+    const offset=pages[pageIndex]?.start||0;
+    pages=L.paginate(readerText,text=>{$('storyText').textContent=text;return $('storyText').scrollHeight<=height;});
+    pageIndex=L.pageAt(pages,offset);paintPage();
+  }
+  function scheduleLayout(){clearTimeout(layoutTimer);layoutTimer=setTimeout(fitReader,30);}
+  function showScene(scene,label,back=false){
+    readerText=scene.text;pages=[{text:readerText,start:0}];pageIndex=0;
+    $('sceneTitle').textContent=scene.title;$('stageLabel').textContent=label;$('backStory').hidden=!back;
+    paintPage();fitReader();
+  }
+  function focusScene(){ $('sceneTitle').focus({preventScroll:true});$('announcement').textContent=$('sceneTitle').textContent; }
+  function baseScene(){
+    const scene=C.sceneFor(state);
+    return state.phase==='ending'?{title:scene.title,text:scene.text+'\n\n帶回日常\n'+C.chapterFor(state).carry}:scene;
+  }
+  function phaseLabel(){return {prologue:'序 · 光的起點',scene:'遇見 · 先看眼前',response:'後續 · 再選一步',ending:'此刻 · 先到這裡',complete:'尾聲 · 回到日常'}[state.phase];}
+  function render(focus=false){
+    selected=null;view=null;$('game').classList.remove('is-reflection');
+    const ch=C.chapterFor(state),index=C.ids.indexOf(ch.id);
+    $('game').dataset.landscape=ch.landscape;
+    $('chapterName').textContent=state.phase==='prologue'?'序 · 光的起點':String(index+1).padStart(2,'0')+' / 12 · '+ch.title;
+    $('ageLabel').textContent=state.phase==='prologue'?'原創互動寓言':ch.age;
+    $('landscapeCaption').textContent='光，一直都在';
+    document.title='渡 · '+(state.phase==='prologue'?'一盞燈的旅程':ch.title);
+    $('journeyTrack').replaceChildren();
+    for(let i=0;i<C.ids.length;i++){const dot=document.createElement('span');dot.className=i===index?'current':i<index?'past':'';$('journeyTrack').append(dot);}
+    const active=['scene','response'].includes(state.phase);
+    $('reflectionTools').hidden=!active;$('choicesArea').hidden=!active;
+    $('endingTools').hidden=!['ending','complete'].includes(state.phase);
+    $('mirror').setAttribute('aria-pressed','false');$('timeLens').setAttribute('aria-pressed','false');
+    $('mirror').textContent='◇ 照一照心裡';$('timeLens').textContent='↗ 往後看看';
+    $('instruction').textContent=state.phase==='response'?'看見了後續，接下來呢？':'此刻，你想怎麼做？';
+    $('hand').replaceChildren();
+    for(const [i,card] of C.choicesFor(state).entries()){
+      const button=document.createElement('button');button.className='choice';button.type='button';button.setAttribute('aria-pressed','false');
+      const number=document.createElement('span');number.className='number';number.textContent='0'+(i+1);number.setAttribute('aria-hidden','true');
+      const title=document.createElement('b');title.textContent=card.title;button.append(number,title);button.setAttribute('aria-label',card.title+'。'+card.text);
+      button.addEventListener('click',()=>{
+        if(conflict||view)return;selected=card.id;
+        for(const peer of $('hand').children)peer.setAttribute('aria-pressed',String(peer===button));
+        $('confirm').disabled=false;$('confirm').textContent='就這樣做 · 看後續';
+        showScene({title:card.title,text:card.text+'\n\n這是你準備做的一步。按下方確認，才會讓故事繼續。'},'選牌 · 尚未確認',true);
+      });$('hand').append(button);
+    }
+    $('confirm').disabled=active;
+    $('confirm').textContent=state.phase==='prologue'?'提起燈，開始旅程':state.phase==='complete'?'帶著這盞燈，回到日常':state.phase==='ending'?(index===11?'走到故事的最後':'下一章 · '+C.chapters[index+1].title):'先選一張牌';
+    $('footerNote').textContent=writable?'沒有分數。確定的選擇，留在這台裝置。':'本次暫不保存；關閉後可能需要重新開始。';
+    showScene(baseScene(),phaseLabel());if(focus)focusScene();
+  }
+  function openReflection(kind){
+    if(conflict||!['scene','response'].includes(state.phase))return;
+    if(view){closeView();return;}
+    view=kind;const ch=C.chapterFor(state);$('game').classList.add('is-reflection');
+    $('choicesArea').hidden=true;$('confirm').disabled=false;$('confirm').textContent='帶著現在的自己，回故事';
+    $('mirror').setAttribute('aria-pressed',String(kind==='mirror'));$('timeLens').setAttribute('aria-pressed',String(kind==='time'));
+    $('mirror').textContent='回到故事';$('timeLens').textContent='回到故事';
+    const scene=kind==='mirror'?{title:'鏡子不急著改變你',text:'也許，心裡有兩個方向。\n\n想要 · '+ch.mirror.want+'\n\n不想要 · '+ch.mirror.avoid+'\n\n只看看，哪一句碰到此刻的你。若都不像，也不用套在自己身上。\n\n不用消滅感覺，也不用聽從每一個念頭。還沒平靜，也能選下一步。'}:{title:'現在，不是永遠',text:'十年之後，這件事還會在我心裡嗎？\n\n也許會淡一些，也許仍然重要，也可以先不知道。\n\n把時間拉遠，不是說現在的難處不算什麼。事情可能有長久影響，生活也不只剩這一件事。\n\n'+ch.carry+'\n\n這只是換個距離看看，不是預告未來，也不會替你改變故事結果。'};
+    showScene(scene,kind==='mirror'?'觀照 · 不需要答對':'時間卡 · 不用回答',true);focusScene();
+  }
+  function closeView(){
+    view=null;$('game').classList.remove('is-reflection');
+    $('choicesArea').hidden=!['scene','response'].includes(state.phase);
+    $('mirror').setAttribute('aria-pressed','false');$('timeLens').setAttribute('aria-pressed','false');
+    $('mirror').textContent='◇ 照一照心裡';$('timeLens').textContent='↗ 往後看看';
+    if(['scene','response'].includes(state.phase)){$('confirm').disabled=!selected;$('confirm').textContent=selected?'就這樣做 · 看後續':'先選一張牌';}
+    else {$('confirm').disabled=false;$('confirm').textContent=state.phase==='complete'?'帶著這盞燈，回到日常':(state.chapter===C.ids.at(-1)?'走到故事的最後':'下一章 · '+C.chapters[C.ids.indexOf(state.chapter)+1].title);$('endingTools').hidden=false;}
+    showScene(baseScene(),phaseLabel());focusScene();
+  }
+  function dispatch(e){if(conflict)return;const next=C.transition(state,e);if(next!==state&&save(next))render(true);}
+  function rest(){
+    view='rest';$('endingTools').hidden=true;$('confirm').disabled=false;$('confirm').textContent='回到這一頁';
+    showScene({title:'今天先走到這裡',text:'不必帶走所有道理。\n\n下次事情來了，若想起「先看看，再選一步」，就試試看；沒想起來，也可以事後再看。\n\n'+(writable?'這段進度已留在這台裝置。現在可以關閉，想繼續時再回來。':'這次無法保存進度；關閉後可能需要重新開始。')},'停靠 · 不需要打卡',true);focusScene();
+  }
+  $('confirm').addEventListener('click',()=>{
+    if(view){closeView();return;}
+    if(state.phase==='prologue')dispatch({type:'start'});
+    else if(state.phase==='ending')dispatch({type:'next'});
+    else if(state.phase==='complete')rest();
+    else if(selected)dispatch({type:'choose',id:selected});
+  });
+  $('backStory').addEventListener('click',()=>view?closeView():showScene(baseScene(),phaseLabel()));
+  $('mirror').addEventListener('click',()=>openReflection('mirror'));$('timeLens').addEventListener('click',()=>openReflection('time'));
+  $('replay').addEventListener('click',()=>{if(!conflict&&['ending','complete'].includes(state.phase)&&save(C.create(state.chapter,false)))render(true);});
+  $('rest').addEventListener('click',rest);
+  $('pagePrev').addEventListener('click',()=>{if(pageIndex>0){pageIndex--;paintPage();}});
+  $('pageNext').addEventListener('click',()=>{if(pageIndex<pages.length-1){pageIndex++;paintPage();}});
+  window.addEventListener('resize',scheduleLayout);window.visualViewport?.addEventListener('resize',scheduleLayout);
+  if(typeof ResizeObserver==='function')new ResizeObserver(scheduleLayout).observe($('reader'));
+  document.fonts?.ready.then(scheduleLayout);
+  $('menuOpen').addEventListener('click',()=>{$('chapterChoice').value=state.chapter;$('menu').showModal();});
+  $('menuClose').addEventListener('click',()=>$('menu').close());
+  $('chapterStart').addEventListener('click',()=>{const id=$('chapterChoice').value;if(!conflict&&C.ids.includes(id)&&save(C.create(id,false))){$('menu').close();render(true);}});
+  $('chapterChoice').replaceChildren();
+  for(const [i,ch]of C.chapters.entries()){const option=document.createElement('option');option.value=ch.id;option.textContent=(i+1)+' · '+ch.title;$('chapterChoice').append(option);}
+  $('dismissNotice').addEventListener('click',()=>{if(!conflict)$('saveNotice').hidden=true;});
+  $('loadLatest').addEventListener('click',()=>{conflict=false;writable=true;lastRaw=null;state=C.create();$('saveNotice').hidden=true;$('loadLatest').hidden=true;restore();render(true);});
+  window.addEventListener('storage',e=>{if(e.key===KEY||e.key===null){conflict=true;notice('另一個分頁已更新旅程。請讀取最新進度再繼續。');$('loadLatest').hidden=false;}});
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});
+  window.addEventListener('appinstalled',()=>{installPrompt=null;$('installStatus').textContent='已加入主畫面，下次從這裡繼續旅程。';});
+  $('install').addEventListener('click',async()=>{
+    if(installPrompt){const prompt=installPrompt;installPrompt=null;try{await prompt.prompt();const c=await prompt.userChoice;$('installStatus').textContent=c.outcome==='accepted'?'正在加入主畫面。':'這次先不安裝，仍可繼續旅程。';}catch(_){$('installStatus').textContent='請從瀏覽器選單選擇加入主畫面。';}}
+    else $('installStatus').textContent=/iPhone|iPad|iPod/.test(navigator.userAgent)?'請用 Safari 開啟，點「分享」→「加入主畫面」。':'請用手機 Chrome 選單，選「安裝應用程式」或「加入主畫面」。';
+  });
+  restore();render();
+})();

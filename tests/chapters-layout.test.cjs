@@ -56,7 +56,7 @@ test('resizing pages can retain the current reading position and never loops on 
   assert.equal(L.paginate('小🌸禾',()=>false).length,3);
 });
 test('phone shell uses the reference viewport height, fixed body and measured reading region',()=>{
-  const css=fs.readFileSync(path.join(__dirname,'../cards.css'),'utf8'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'../light.css'),'utf8'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   assert.match(css,/body\{position:fixed;inset:0\}/);assert.match(css,/width:min\(100%,480px\)/);assert.match(css,/height:100dvh/);
   assert.match(css,/\.reader\{flex:1;min-height:0;overflow:hidden\}/);assert.doesNotMatch(css,/line-clamp|text-overflow:ellipsis/);
   assert.match(html,/id="pagePrev"/);assert.match(html,/id="pageNext"/);assert.match(html,/cards-layout\.js/);assert.doesNotMatch(html,/user-scalable=no|maximum-scale=1/);

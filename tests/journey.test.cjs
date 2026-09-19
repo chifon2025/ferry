@@ -23,9 +23,9 @@ test('fifteen chapters contain 69 distinct routes and 828 complete state combina
   }
   assert.equal(routes,69);assert.equal(titles.size,69);assert.equal(combinations,828);
 });
-test('browser script order constructs the same chapters without CommonJS',()=>{
-  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),context={};vm.createContext(context);
-  const scripts=Array.from(html.matchAll(/<script src="\.\/(cards-[^\"]+\.js)"/g),m=>m[1]);
+test('retired flower-story modules remain readable without CommonJS',()=>{
+  const context={};vm.createContext(context);
+  const scripts=['cards-journey.js','cards-stories.js','cards-core.js'];
   for(const file of scripts)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
   assert.deepEqual(Array.from(context.FerryCardsCore.chapters),C.chapters);
   for(const id of C.chapters)assert.equal(context.FerryCardsCore.chapterFor(context.FerryCardsCore.create(0,id)).title,C.chapterFor(C.create(0,id)).title);

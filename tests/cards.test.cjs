@@ -59,7 +59,8 @@ function setup(values={},options={}){
   let active=null;function element(){const classes=new Set();return Object.assign(events(),{children:[],attrs:{},dataset:{},hidden:false,disabled:false,textContent:'',
     classList:{add:n=>classes.add(n),remove:n=>classes.delete(n),toggle(n,force){if(force===undefined? !classes.has(n):force)classes.add(n);else classes.delete(n);}},
     setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;this.emit('close');}});}
-  const elements={},html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
+  // Retired controller regression harness, independent of the new light-story DOM.
+  const elements={},source=fs.readFileSync(path.join(root,'cards.js'),'utf8');for(const [,id]of source.matchAll(/\$\('([^']+)'\)/g))elements[id]=element();
   elements.reader.clientHeight=options.readerHeight||160;
   Object.defineProperty(elements.storyText,'scrollHeight',{get(){return Math.ceil(Array.from(this.textContent).length/(options.lineChars||18))*26;}});
   const data=new Map(Object.entries(values)),reads=[],writes=[],timers=new Map();let timer=0;
