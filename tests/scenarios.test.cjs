@@ -2,6 +2,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),C=require('../scenario-core.js'),L=require('../cards-layout.js'),KEY='du_ferry_scenarios_v1';
 const initial=id=>({v:1,caseId:id,phase:'scene',filter:'all',seen:[id],action:null,reply:null});
+test('vivid rewrite keeps all 500 identities and facts stable with short authored openings',()=>{
+  const seeds=require('../scenario-seeds.js').groups,crypto=require('node:crypto');
+  const identity=seeds.map(g=>[g.id,g.rows.trim().split('\n').map(row=>{const [title,opening,fact]=row.split('|');assert.ok(opening.length>=30&&opening.length<=80,title+' reading budget');return [title,fact.trim()];})]);
+  // Changing this fingerprint means a scenario identity or original decision premise changed.
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex'),'f2612f4b8abae39dc5ab1487001dd92e85cc68ca2ba830f31ca35624bc73283e');
+  for(const c of C.scenarios)for(const p of c.paths){assert.ok(p.after.text.length>50);for(const r of p.replies)assert.ok(r.end.text.startsWith(r.text+'\n\n'));}
+});
 test('500 unique situations across 25 categories expose 2000 valid distinct context-bound routes',()=>{
   assert.equal(C.scenarios.length,500);assert.equal(C.categories.length,25);
   assert.equal(new Set(C.scenarios.map(s=>s.title)).size,500);

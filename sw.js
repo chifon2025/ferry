@@ -1,7 +1,7 @@
 /* Random situations offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'scenarios-v1';
+const CACHE_VERSION=CACHE_PREFIX+'scenarios-v2';
 const APP_SHELL=['./','./index.html','./light.css','./scenario-seeds.js','./scenario-data.js','./scenario-core.js','./cards-layout.js','./scenario.js','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
 self.addEventListener('install',event=>{
