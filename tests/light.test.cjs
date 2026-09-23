@@ -33,10 +33,9 @@ test('all narrative, choice and outcome text is losslessly paginated at small ph
   const texts=[];const walk=v=>{if(typeof v==='string')texts.push(v);else if(v&&typeof v==='object')Object.values(v).forEach(walk);};walk({chapters:C.chapters,prologue:C.prologue,epilogue:C.epilogue});
   for(const text of texts)for(const cap of [1,9,27,60,180]){const pages=L.paginate(text,t=>Array.from(t).length<=cap);assert.equal(pages.map(p=>p.text).join(''),text);assert.ok(pages.every(p=>Array.from(p.text).length<=cap));}
 });
-test('new browser entry uses only the light journey with local dependencies and traditional text',()=>{
-  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),context={};vm.createContext(context);
-  const scripts=Array.from(html.matchAll(/<script src="\.\/([^\"]+)"/g),m=>m[1]);
-  assert.deepEqual(scripts,['light-story.js','light-core.js','cards-layout.js','light.js','pwa-update.js']);
+test('retired light journey remains independently loadable with local dependencies and traditional text',()=>{
+  const context={};vm.createContext(context);
+  const scripts=['light-story.js','light-core.js','cards-layout.js','light.js','pwa-update.js'];
   for(const file of scripts.slice(0,3))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
   assert.deepEqual(Array.from(context.FerryLightCore.ids),C.ids);
   for(const file of ['light-story.js','light-core.js','light.js','index.html'])assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/[没现离还写给开满们处独这来后为会说时从变]/);

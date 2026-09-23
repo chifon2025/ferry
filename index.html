@@ -4,22 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#132e35">
-  <meta name="description" content="渡・順流成真。一盞燈的旅程：十二章原創互動寓言，陪一個人走過一生。遇見、選擇、行動，然後放下。">
-  <title>渡 · 一盞燈的旅程</title>
+  <meta name="description" content="渡・順流成真。500 種隨機生活情境。遇見一件事，選擇、行動，再把做完的放下。">
+  <title>渡 · 遇見生活</title>
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./light.css">
-  <script src="./light-story.js" defer></script>
-  <script src="./light-core.js" defer></script>
+  <script src="./scenario-seeds.js" defer></script>
+  <script src="./scenario-data.js" defer></script>
+  <script src="./scenario-core.js" defer></script>
   <script src="./cards-layout.js" defer></script>
-  <script src="./light.js" defer></script>
+  <script src="./scenario.js" defer></script>
   <script src="./pwa-update.js" defer></script>
 </head>
 <body>
 <main class="game" id="game" data-landscape="dawn">
-  <header class="top"><a class="brand" href="./" aria-label="渡，回到目前旅程"><strong>渡</strong><span>順流成真<small>一盞燈的旅程</small></span></a><button class="menu-button" id="menuOpen" aria-label="開啟功能選單" aria-haspopup="dialog">☰</button></header>
-  <div class="chapter-line"><span id="chapterName">序 · 光的起點</span><span id="ageLabel">原創互動寓言</span></div>
+  <header class="top"><a class="brand" href="./" aria-label="渡，回到目前情境"><strong>渡</strong><span>順流成真<small>遇見生活</small></span></a><button class="menu-button" id="menuOpen" aria-label="開啟功能選單" aria-haspopup="dialog">☰</button></header>
+  <div class="chapter-line"><span id="chapterName">隨機生活情境</span><span id="ageLabel">500 種生活片刻</span></div>
   <div class="journey-track" id="journeyTrack" aria-hidden="true"></div>
   <section class="stage" aria-labelledby="sceneTitle">
     <div class="landscape" aria-hidden="true">
@@ -40,16 +41,16 @@
       <span class="landscape-caption" id="landscapeCaption">光，一直都在</span>
     </div>
     <article class="paper">
-      <div class="reader-top"><span class="eyebrow" id="stageLabel">序章</span><button class="text-button" id="backStory" hidden>回故事</button></div>
-      <h1 id="sceneTitle" tabindex="-1">一盞燈的旅程</h1>
-      <div class="reader" id="reader"><p id="storyText">陪一點光，走過一個人的一生。</p></div>
-      <nav class="pager" aria-label="故事翻頁"><button id="pagePrev" aria-label="上一頁">←</button><span id="pageCount" role="status">1 / 1</span><button id="pageNext" aria-label="下一頁">→</button></nav>
+      <div class="reader-top"><span class="eyebrow" id="stageLabel">遇見</span><button class="text-button" id="backStory" hidden>回情境</button></div>
+      <h1 id="sceneTitle" tabindex="-1">遇見生活</h1>
+      <div class="reader" id="reader"><p id="storyText">準備一件生活裡的小事……</p></div>
+      <nav class="pager" aria-label="情境翻頁"><button id="pagePrev" aria-label="上一頁">←</button><span id="pageCount" role="status">1 / 1</span><button id="pageNext" aria-label="下一頁">→</button></nav>
     </article>
   </section>
   <div class="control-dock" id="controlDock">
   <div class="reflection-tools" id="reflectionTools" hidden><button id="mirror" aria-pressed="false">◇ 照一照心裡</button><button id="timeLens" aria-pressed="false">↗ 往後看看</button></div>
   <section class="choices" id="choicesArea" aria-labelledby="instruction" hidden><p id="instruction">此刻，你想怎麼做？</p><div class="hand" id="hand"></div></section>
-  <button class="primary" id="confirm">提起燈，開始旅程</button>
+  <button class="primary" id="confirm" disabled>先選一張牌</button>
   <div class="ending-tools" id="endingTools" hidden><button id="replay">換一種走法</button><button id="rest">先停在這裡</button></div>
   <p class="footnote" id="footerNote">沒有分數，也沒有必須成為的樣子。</p>
   </div>
@@ -57,12 +58,12 @@
   <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
 </main>
 <dialog id="menu" aria-labelledby="menuTitle">
-  <div class="menu-head"><h2 id="menuTitle">旅程中的停靠</h2><button id="menuClose" aria-label="關閉功能選單">×</button></div>
+  <div class="menu-head"><h2 id="menuTitle">生活中的停靠</h2><button id="menuClose" aria-label="關閉功能選單">×</button></div>
   <button class="menu-row" id="install">安裝手機 App</button><p class="menu-status" id="installStatus">加入主畫面，下次從這一頁繼續。</p>
   <button class="menu-row" id="btnUpdate">檢查更新</button><p class="menu-status" id="updateStatus" role="status">連線時自動檢查新版</p>
-  <label for="chapterChoice">十二章 · 不必依序</label><select id="chapterChoice"></select><p class="menu-status">點「走進這章」才會取代目前的新旅程進度。花店舊紀錄不會被更動。</p><button class="menu-row" id="chapterStart">走進這章</button>
-  <details><summary>這趟旅程怎麼玩</summary><p>遇見事件，點一張牌看做法，再按下方按鈕確認。看見後續後，再選下一步。每章兩次選擇，沒有標準答案。</p><p>「照一照心裡」和「往後看看」都可跳過。它們不改變外部結果，也不記錄你的感受。長文用左右箭頭翻頁，不用往下拉主畫面。</p></details>
-  <details><summary>關於這一道光</summary><p>以使用者原創《順流成真・一盞燈的旅程》為主線，再創作日常事件與分支。這是一篇寓言，不是宗教考試或心理治療；光不是修行分數，情緒不會讓它熄滅。</p><p>故事不保證願望成真。放下不等於放棄必要的醫療、安全、責任與界線。可以跳章、離開，或仍然在意。</p><p>沒有配樂、水聲、倒數、付費抽卡、帳號或追蹤分析。進度只存這台裝置；新舊故事使用不同紀錄，互不覆寫。</p></details>
+  <label for="chapterChoice">想遇見哪一類生活情境？</label><select id="chapterChoice"></select><p class="menu-status">25 類、共 500 個情境。點「換個情境」才會換掉目前這一件；同類抽完會重新洗牌，不計分、不需集滿。</p><button class="menu-row" id="chapterStart">換個情境</button>
+  <details><summary>怎麼玩</summary><p>每次隨機遇見一件事。點牌先看做法，再按下方確認；看見後續後，再選一步。收尾後可再遇見一件事、換一種走法，或先停在這裡。</p><p>「照一照心裡」與「往後看看」可跳過，不會記錄你的感受，也不會改變外部結果。文字用左右箭頭翻頁，不用往下拉主畫面。</p><p>同一輪優先抽尚未遇見的情境。重開回到原處；切換類別會保留其他類別的抽取紀錄。</p></details>
+  <details><summary>關於渡</summary><p>不走固定主角或章節故事。500 個原創生活情境，依 25 種主題設計共用的回應路線，練習看見想要與不想要，再選眼前能做的一步。</p><p>這不是宗教考試或心理治療，也不保證願望成真。放下不等於放棄必要的醫療、安全、責任與界線。可以離開，或仍然在意。</p><p>沒有配樂、水聲、倒數、付費抽卡、帳號或追蹤分析。進度只存這台裝置；舊版本的紀錄保留，不讀寫、不清空。</p></details>
 </dialog>
 <noscript><p class="no-script">請開啟 JavaScript，才能開始這段互動旅程。</p></noscript>
 </body>

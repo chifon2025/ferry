@@ -1,8 +1,8 @@
-/* Card story offline shell. Never read or clear player storage. */
+/* Random situations offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'light-v2';
-const APP_SHELL=['./','./index.html','./light.css','./light-story.js','./light-core.js','./cards-layout.js','./light.js','./pwa-update.js','./manifest.webmanifest',
+const CACHE_VERSION=CACHE_PREFIX+'scenarios-v1';
+const APP_SHELL=['./','./index.html','./light.css','./scenario-seeds.js','./scenario-data.js','./scenario-core.js','./cards-layout.js','./scenario.js','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_VERSION)
@@ -15,7 +15,7 @@ self.addEventListener('activate',event=>{
     const retired=keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE_VERSION);
     await Promise.all(retired.map(key=>caches.delete(key)));
     await self.clients.claim();
-    if(retired.some(key=>!['cards-','light-'].some(series=>key.startsWith(CACHE_PREFIX+series)))){
+    if(retired.some(key=>!['cards-','light-','scenarios-'].some(series=>key.startsWith(CACHE_PREFIX+series)))){
       const clients=await self.clients.matchAll({type:'window'});
       const root=new URL(self.registration.scope);
       for(const client of clients){
