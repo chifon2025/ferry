@@ -8,7 +8,7 @@ const assert=require('node:assert/strict');
     await page.addInitScript(()=>{localStorage.setItem('du_ferry_cards_v1','original flower record');localStorage.setItem('du_ferry_audio_v2','off');});
     await page.goto((process.argv[2]||'http://127.0.0.1:8138/')+'?offline-test');
     await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-    const cached=await page.evaluate(async()=>{const names=await caches.keys();return {names,files:(await (await caches.open(names.find(n=>n.endsWith('scenarios-v3')))).keys()).map(r=>new URL(r.url).pathname)};});
+    const cached=await page.evaluate(async()=>{const names=await caches.keys();return {names,files:(await (await caches.open(names.find(n=>n.endsWith('scenarios-v4')))).keys()).map(r=>new URL(r.url).pathname)};});
     assert.equal(cached.files.length,17);assert.ok(cached.files.some(f=>f.endsWith('scenario-seeds.js')));assert.ok(!cached.files.some(f=>f.includes('flower')));
     await page.locator('#hand button').last().click();await page.locator('#confirm').click();
     const title=await page.locator('#sceneTitle').textContent(),raw=await page.evaluate(()=>localStorage.getItem('du_ferry_scenarios_v1'));

@@ -21,8 +21,8 @@ const base=process.argv[2]||'http://127.0.0.1:8138/';
       }
       for(const c of C.cases){
         await page.locator('#menuOpen').click();await page.locator('#chapterChoice').selectOption(c.id);await page.locator('#chapterStart').click();await inspect(c.id+' scene '+JSON.stringify(config));
-        await page.locator('#hand button').first().click();await inspect('flip');assert.equal(await page.locator('#hand').isVisible(),false);
-        await page.locator('#backStory').click();await page.locator('#hand button').last().click();await page.locator('#confirm').click();await inspect('action');
+        for(const b of await page.locator('#hand button').all())await b.click();await inspect('three selected');assert.equal(await page.locator('#hand button[aria-pressed=true]').count(),3);await page.locator('#confirm').click();await inspect('flip');assert.equal(await page.locator('#hand').isVisible(),false);
+        await page.locator('#backStory').click();assert.equal(await page.locator('#hand button[aria-pressed=true]').count(),3);await page.locator('#hand button').last().click();assert.equal(await page.locator('#hand button[aria-pressed=true]').count(),2);await page.locator('#confirm').click();await page.locator('#confirm').click();await inspect('action');
         await page.locator('#hand button').last().click();await inspect('preview');
         await page.locator('#timeLens').click();await inspect('time');await page.locator('#confirm').click();await page.locator('#confirm').click();await inspect('ending');
         await page.locator('#rest').click();await inspect('rest');await page.locator('#confirm').click();await page.locator('#replay').click();await page.locator('#confirm').click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'response');
@@ -35,7 +35,7 @@ const base=process.argv[2]||'http://127.0.0.1:8138/';
     await page.locator('#hand button').last().click();await page.locator('#confirm').click();
     const raw=await page.evaluate(()=>localStorage.getItem('du_ferry_scenarios_v1'));
     await page.evaluate(()=>localStorage.setItem('du_ferry_cards_v1','preserved old card record'));
-    await page.goto(base+'reframe.html?offline-test');await page.locator('#hand button').last().click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'flip');
+    await page.goto(base+'reframe.html?offline-test');await page.locator('#hand button').last().click();await page.locator('#hand button').first().click();await page.locator('#confirm').click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'flip');
     await context.setOffline(true);await page.reload();assert.equal(await page.locator('#game').getAttribute('data-phase'),'scene');
     await page.locator('#confirm').click();await page.locator('#hand button').first().click();await page.locator('#confirm').click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'ending');
     assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_scenarios_v1')),raw);

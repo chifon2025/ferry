@@ -48,27 +48,28 @@
     return {...original,reactions:d.reactions.map(([title,text],i)=>({id:'t'+i,title,text})),actions:d.actions.map(([title,text,endTitle,endText],i)=>({id:'a'+i,title,text,end:{title:endTitle,text:endText}}))};
   });
   const phases=['scene','flip','response','ending'];
-  function create(id=cases[0].id){if(!cases.some(c=>c.id===id))throw new Error('Unknown trial');return {caseId:id,phase:'scene',reaction:null,action:null,seen:[id]};}
+  function create(id=cases[0].id){if(!cases.some(c=>c.id===id))throw new Error('Unknown trial');return {caseId:id,phase:'scene',reactions:[],action:null,seen:[id]};}
   function caseFor(s){return cases.find(c=>c.id===s.caseId);}
   function valid(s){
-    if(!s||typeof s!=='object'||Object.keys(s).sort().join()!=='action,caseId,phase,reaction,seen')return false;
+    if(!s||typeof s!=='object'||Object.keys(s).sort().join()!=='action,caseId,phase,reactions,seen')return false;
     if(!caseFor(s)||!phases.includes(s.phase)||!Array.isArray(s.seen)||new Set(s.seen).size!==s.seen.length||!s.seen.includes(s.caseId)||s.seen.some(id=>!cases.some(c=>c.id===id)))return false;
-    if(s.reaction!==null&&!caseFor(s).reactions.some(r=>r.id===s.reaction))return false;
-    if(s.phase==='scene')return s.reaction===null&&s.action===null;
-    if(s.phase==='flip')return s.reaction!==null&&s.action===null;
+    if(!Array.isArray(s.reactions)||new Set(s.reactions).size!==s.reactions.length||s.reactions.some(id=>!caseFor(s).reactions.some(r=>r.id===id)))return false;
+    if(s.phase==='scene')return s.action===null;
+    if(s.phase==='flip')return s.reactions.length>0&&s.action===null;
     if(s.phase==='response')return s.action===null;
     return caseFor(s).actions.some(a=>a.id===s.action);
   }
-  function replay(s){return {...s,phase:'scene',reaction:null,action:null};}
+  function replay(s){return {...s,phase:'scene',reactions:[],action:null};}
   function draw(s,random=Math.random){let pool=cases.filter(c=>!s.seen.includes(c.id)),seen=s.seen;if(!pool.length){pool=cases.filter(c=>c.id!==s.caseId);seen=[];}const id=pool[Math.min(pool.length-1,Math.max(0,Math.floor(random()*pool.length)))].id;return {...create(id),seen:[...seen,id]};}
   function choicesFor(s){const c=caseFor(s);return s.phase==='scene'?c.reactions:s.phase==='response'?c.actions:[];}
-  function sceneFor(s){const c=caseFor(s);if(s.phase==='scene')return c.event;if(s.phase==='flip'){const r=c.reactions.find(r=>r.id===s.reaction);return {title:'「'+r.title+'」',text:r.text+'\n\n我現在很在意，但不用急著跟著這個念頭走。\n\n這只是另一個角度，不貼近你也沒關係。還沒平靜，也可以選下一步。'};}if(s.phase==='response')return {title:'眼前，先做哪一步？',text:'事情還是這件事，不用勉強自己想開。\n\n'+c.event.text+'\n\n先選一個你願意試的做法，不需要答對。'};return c.actions.find(a=>a.id===s.action).end;}
+  function sceneFor(s){const c=caseFor(s);if(s.phase==='scene')return c.event;if(s.phase==='flip'){const chosen=c.reactions.filter(r=>s.reactions.includes(r.id));return {title:chosen.length===1?'「'+chosen[0].title+'」':'幾種心情，可以同時存在',text:chosen.map(r=>'「'+r.title+'」\n'+r.text).join('\n\n')+'\n\n我現在很在意，但不用急著跟著這些念頭走。\n\n這只是另一個角度，不貼近你也沒關係。還沒平靜，也可以選下一步。'};}if(s.phase==='response')return {title:'眼前，先做哪一步？',text:'事情還是這件事，不用勉強自己想開。\n\n'+c.event.text+'\n\n先選一個你願意試的做法，不需要答對。'};return c.actions.find(a=>a.id===s.action).end;}
   function transition(s,e,random=Math.random){
     if(!valid(s)||!e)return s;
-    if(e.type==='choose'&&choicesFor(s).some(c=>c.id===e.id))return s.phase==='scene'?{...s,phase:'flip',reaction:e.id}:{...s,phase:'ending',action:e.id};
+    if(e.type==='choose'&&choicesFor(s).some(c=>c.id===e.id))return s.phase==='scene'?{...s,reactions:s.reactions.includes(e.id)?s.reactions.filter(id=>id!==e.id):[...s.reactions,e.id]}:{...s,phase:'ending',action:e.id};
+    if(e.type==='flip'&&s.phase==='scene'&&s.reactions.length)return {...s,phase:'flip'};
     if(e.type==='continue'&&s.phase==='flip')return {...s,phase:'response'};
-    if(e.type==='skip'&&s.phase==='scene')return {...s,phase:'response'};
-    if(e.type==='back'&&s.phase==='flip')return replay(s);
+    if(e.type==='skip'&&s.phase==='scene'&&!s.reactions.length)return {...s,phase:'response'};
+    if(e.type==='back'&&s.phase==='flip')return {...s,phase:'scene'};
     if(e.type==='next'&&s.phase==='ending')return draw(s,random);
     return s;
   }

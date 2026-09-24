@@ -37,6 +37,14 @@
     return state.phase==='ending'?{title:scene.title,text:scene.text+'\n\n帶回日常\n'+C.caseFor(state).carry}:scene;
   }
   function phaseLabel(){return {scene:'① 認出第一反應',flip:'② 翻牌 · 看見在意',response:'③ 選眼前的一步',ending:'做完，先到這裡'}[state.phase];}
+  function syncReactions(){
+    if(state.phase!=='scene')return;
+    for(const [i,button] of Array.from($('hand').children).entries()){
+      const checked=state.reactions.includes(C.caseFor(state).reactions[i].id);
+      button.setAttribute('aria-pressed',String(checked));button.children[0].textContent=checked?'✓':'□';
+    }
+    $('confirm').textContent=state.reactions.length?'翻牌看看 · 已選 '+state.reactions.length+' 句':'都不像，先略過';
+  }
   function render(focus=false){
     selected=null;view=null;$('game').classList.remove('is-reflection');
     const ch=C.caseFor(state),index=C.phases.indexOf(state.phase);
@@ -52,14 +60,14 @@
     $('endingTools').hidden=state.phase!=='ending';
     $('mirror').setAttribute('aria-pressed','false');$('timeLens').setAttribute('aria-pressed','false');
     $('mirror').textContent='◇ 照一照心裡';$('timeLens').textContent='↗ 往後看看';
-    $('instruction').textContent=state.phase==='response'?'選做法，再按確認看後續':'哪句像第一反應？點一下翻牌';
+    $('instruction').textContent=state.phase==='response'?'選做法，再按確認看後續':'哪些像第一反應？可複選，再點可取消';
     $('hand').replaceChildren();
     for(const [i,card] of C.choicesFor(state).entries()){
       const button=document.createElement('button');button.className='choice';button.type='button';button.setAttribute('aria-pressed','false');
       const number=document.createElement('span');number.className='number';number.textContent='0'+(i+1);number.setAttribute('aria-hidden','true');
-      const title=document.createElement('b');title.textContent=card.title;button.append(number,title);button.setAttribute('aria-label',card.title+'。'+card.text);
+      const title=document.createElement('b');title.textContent=card.title;button.append(number,title);button.setAttribute('aria-label',state.phase==='scene'?card.title:card.title+'。'+card.text);
       button.addEventListener('click',()=>{
-        if(view)return;if(state.phase==='scene'){dispatch({type:'choose',id:card.id});return;}selected=card.id;
+        if(view)return;if(state.phase==='scene'){state=C.transition(state,{type:'choose',id:card.id});syncReactions();return;}selected=card.id;
         for(const peer of $('hand').children)peer.setAttribute('aria-pressed',String(peer===button));
         $('confirm').disabled=false;$('confirm').textContent='就這樣做 · 看後續';
         showScene({title:card.title,text:card.text+'\n\n這是你準備做的一步。按下方確認，才會看見這一步的後續。'},'選牌 · 尚未確認',true);
@@ -68,7 +76,7 @@
     $('confirm').disabled=state.phase==='response';
     $('confirm').textContent={scene:'都不像，先略過',flip:'選眼前的一小步',response:'先選一個做法',ending:'再遇見一件事'}[state.phase];
     $('footerNote').textContent='不計分、不記錄感受。重新整理會重開試玩。';
-    $('backStory').textContent=state.phase==='flip'?'換一句':'回情境';showScene(baseScene(),phaseLabel(),state.phase==='flip');if(focus)focusScene();
+    syncReactions();$('backStory').textContent=state.phase==='flip'?'調整選擇':'回情境';showScene(baseScene(),phaseLabel(),state.phase==='flip');if(focus)focusScene();
   }
   function openReflection(kind){
     if(state.phase!=='response')return;
@@ -96,7 +104,7 @@
   }
   $('confirm').addEventListener('click',()=>{
     if(view){closeView();return;}
-    if(state.phase==='scene')dispatch({type:'skip'});
+    if(state.phase==='scene')dispatch({type:state.reactions.length?'flip':'skip'});
     else if(state.phase==='flip')dispatch({type:'continue'});
     else if(state.phase==='ending')dispatch({type:'next'});
     else if(selected)dispatch({type:'choose',id:selected});
