@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.resolve(__dirname,'..'),scope='https://example.com/ferry/',prefix='du-ferry:'+scope+':';
 function worker(options={}){
   const handlers={},deleted=[],navigated=[],fetched=[];let precached=[],claimed=false,skipped=false;
-  const cache={addAll:async list=>{if(options.failInstall)throw new Error('offline');precached=list;},match:async key=>typeof key==='string'&&key==='./index.html'?new Response('rebuild'):undefined};
+  const cache={addAll:async list=>{if(options.failInstall)throw new Error('offline');precached=list;},match:async key=>typeof key==='string'&&key==='./index.html'?new Response('rebuild'):key==='./reframe.html'?new Response('trial'):undefined};
   const self={registration:{scope},addEventListener:(n,f)=>handlers[n]=f,skipWaiting:async()=>{skipped=true;},clients:{claim:async()=>{claimed=true;},matchAll:async()=>
     [scope+'boat.html',scope+'legacy.html','https://example.com/other/','https://example.com/ferry-other/','https://outside.example/ferry/'].map(url=>({url,navigate:to=>{navigated.push({url,to});return new Promise(()=>{});}}))}};
   vm.runInNewContext(fs.readFileSync(path.join(root,'sw.js'),'utf8'),{self,URL,Response,Request:class{constructor(url,options){this.url=url;this.options=options;}},
@@ -26,19 +26,19 @@ test('old entry URLs are navigation-only stubs',()=>{
 });
 test('complete card shell is fetched fresh before activation',async()=>{
   const w=worker();let done;w.handlers.install({waitUntil:p=>done=p});await done;
-  assert.equal(w.skipped,true);assert.equal(w.precached.length,13);assert.ok(w.precached.some(r=>r.url==='./scenario-seeds.js'));assert.ok(!w.precached.some(r=>r.url.includes('flower')||r.url==='./cards.js'));
+  assert.equal(w.skipped,true);assert.equal(w.precached.length,17);assert.ok(w.precached.some(r=>r.url==='./scenario-seeds.js'));assert.ok(!w.precached.some(r=>r.url.includes('flower')||r.url==='./cards.js'));
   for(const r of w.precached){assert.equal(r.options.cache,'reload');assert.ok(fs.existsSync(path.join(root,r.url==='./'?'index.html':r.url.slice(2))));}
   const bad=worker({failInstall:true});bad.handlers.install({waitUntil:p=>done=p});await assert.rejects(done,/offline/);assert.equal(bad.skipped,false);
 });
 test('activation removes only old scoped caches and redirects only ferry tabs without deadlock',async()=>{
-  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'scenarios-v2','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
+  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'scenarios-v3','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
   const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;
   assert.deepEqual(w.deleted,keys.slice(0,2));assert.equal(w.claimed,true);assert.equal(w.navigated.length,2);
   assert.ok(w.navigated.every(v=>v.to===scope));
 });
 test('fresh install and future card updates do not force-navigation of current story tabs',async()=>{
-  for(const keys of [[prefix+'scenarios-v2'],[prefix+'cards-v5',prefix+'cards-v6',prefix+'light-v1',prefix+'light-v2',prefix+'scenarios-v0',prefix+'scenarios-v1',prefix+'scenarios-v2']]){
-    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'scenarios-v2'));
+  for(const keys of [[prefix+'scenarios-v3'],[prefix+'cards-v5',prefix+'cards-v6',prefix+'light-v1',prefix+'light-v2',prefix+'scenarios-v0',prefix+'scenarios-v1',prefix+'scenarios-v3']]){
+    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'scenarios-v3'));
   }
 });
 test('all in-scope navigations serve the new shell offline and never fetch an old game',async()=>{
@@ -51,4 +51,9 @@ test('out-of-scope requests are untouched and player storage is never accessed',
     let handled=false;w.handlers.fetch({request:{method:'GET',mode:'navigate',url},respondWith:()=>handled=true});assert.equal(handled,false);
   }
   for(const file of ['sw.js','pwa-update.js','index.html'])assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/localStorage|indexedDB|sessionStorage/);
+});
+test('only the exact trial navigation serves its own cached shell',async()=>{
+  const w=worker();for(const [file,body] of [['reframe.html','trial'],['reframe.html?source=menu','trial'],['nested/reframe.html','rebuild'],['reframe.html-other','rebuild']]){
+    let done;w.handlers.fetch({request:{method:'GET',mode:'navigate',url:scope+file},respondWith:p=>done=p});assert.equal(await(await done).text(),body);
+  }assert.equal(w.fetched.length,0);
 });

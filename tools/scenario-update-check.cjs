@@ -1,5 +1,5 @@
 'use strict';
-// Isolated loopback server reproduces a real installed light-v2 -> scenarios-v2 update.
+// Isolated loopback server reproduces a real installed light-v2 -> scenarios-v3 update.
 const {chromium}=require(process.env.FERRY_PLAYWRIGHT_PATH||'playwright');
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),baseline='4ce79ada95868e44a7167e9264abf0b748b568fa';
@@ -26,7 +26,7 @@ const server=http.createServer((req,res)=>{
     await page.waitForFunction(()=>!!window.FerryScenarioCore,{},{timeout:30000});
     assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_light_v1')),oldRaw);
     assert.ok(await page.evaluate(()=>FerryScenarioCore.valid(JSON.parse(localStorage.getItem('du_ferry_scenarios_v1')))));
-    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v2'));
+    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v3'));
     const title=await page.locator('#sceneTitle').textContent();await context.setOffline(true);await page.reload();assert.equal(await page.locator('#sceneTitle').textContent(),title);
     await page.locator('#hand button').first().click();await page.locator('#confirm').click();await page.locator('#hand button').last().click();await page.locator('#confirm').click();await page.locator('#confirm').click();
     assert.notEqual(await page.locator('#sceneTitle').textContent(),title);assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_light_v1')),oldRaw);assert.deepEqual(errors,[]);

@@ -1,0 +1,7 @@
+.game[data-phase=scene] .hand{grid-template-columns:1fr;gap:5px}
+.game[data-phase=scene] .choice{min-height:44px;padding:6px 10px;justify-content:flex-start}
+.game[data-phase=scene] .choice .number{min-width:22px}
+.game[data-phase=flip] .paper{background:#f4f5e9}
+.game[data-phase=flip] .reader-top{min-height:44px}
+.game[data-phase=flip] #backStory{min-height:44px}
+a.menu-row{display:block;text-decoration:none}
