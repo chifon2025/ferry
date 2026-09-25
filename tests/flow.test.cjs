@@ -8,11 +8,24 @@ test('all 500 stable situations support all 8000 combination/action paths withou
     assert.deepEqual(c.event,O.scenarios.find(o=>o.id===c.id).event);assert.equal(c.reactions.length,3);assert.equal(c.actions.length,2);const ends=[new Set(),new Set()];
     for(let mask=0;mask<8;mask++)for(let a=0;a<2;a++){
       let s=initial(c.id);for(let i=0;i<3;i++)if(mask&(1<<i))s=C.transition(s,{type:'choose',id:'t'+i});assert.ok(C.valid(s));assert.equal(s.phase,'scene');
-      if(mask){s=C.transition(s,{type:'flip'});assert.ok(C.valid(s));const text=C.sceneFor(s).text;for(let i=0;i<3;i++)assert.equal(text.includes(c.reactions[i].text),!!(mask&(1<<i)));s=C.transition(s,{type:'continue'});}else s=C.transition(s,{type:'skip'});
+      if(mask){s=C.transition(s,{type:'flip'});assert.ok(C.valid(s));const text=C.sceneFor(s).text;for(let i=0;i<3;i++)assert.equal(text.includes(c.release?c.reactions[i].title:c.reactions[i].text),!!(mask&(1<<i)));s=C.transition(s,{type:'continue'});}else s=C.transition(s,{type:'skip'});
       assert.ok(C.valid(s));assert.equal(s.phase,'response');s=C.transition(s,{type:'choose',id:'a'+a});assert.equal(s.phase,'ending');assert.ok(C.valid(s));ends[a].add(C.sceneFor(s).text);paths++;
       assert.equal(C.restore(C.snapshot(s)).reactions.length,0);assert.ok(!JSON.stringify(C.snapshot(s)).includes('reactions'));
     }assert.equal(ends[0].size,1);assert.equal(ends[1].size,1);assert.notEqual([...ends[0]][0],[...ends[1]][0]);
   }assert.equal(paths,8000);
+});
+test('only the five selected cases use the release pause; the other 495 retain reframing',()=>{
+  const ids=['s041','s003','s201','s096','s131'];assert.deepEqual(C.scenarios.filter(c=>c.release).map(c=>c.id).sort(),[...ids].sort());
+  for(const c of C.scenarios){let s=initial(c.id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});const scene=C.sceneFor(s);
+    if(ids.includes(c.id)){assert.match(scene.text,/我能允許現在的感覺先在這裡嗎/);assert.match(scene.text,/我願意鬆開一點點嗎/);assert.match(scene.text,/還不願意/);assert.match(scene.text,/想被/);assert.match(scene.text,/想控制/);assert.match(scene.text,/想安心/);assert.doesNotMatch(scene.text,/不用急著跟著它們走/);}
+    else {assert.match(scene.text,/不用急著跟著它們走/);assert.doesNotMatch(scene.text,/我願意鬆開一點點嗎/);}
+  }
+});
+test('five release cases show release labels and button while an ordinary case keeps existing labels',async()=>{
+  for(const id of ['s041','s003','s201','s096','s131','s001']){const s=setup({[KEY]:JSON.stringify(C.snapshot(initial(id)))}),e=s.elements;await e.hand.children[0].emit('click');await e.confirm.emit('click');
+    if(C.caseFor(initial(id)).release){assert.equal(e.stageLabel.textContent,'② 容許感受 · 鬆開一點');assert.equal(e.confirm.textContent,'帶著現在的自己，選下一步');}
+    else {assert.equal(e.stageLabel.textContent,'② 翻牌 · 看見在意');assert.equal(e.confirm.textContent,'選眼前的一小步');}
+  }
 });
 test('new homepage loads unified flow while old pilot URL redirects, all content stays original/local',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),scripts=[...html.matchAll(/<script src="\.\/([^" ]+)"/g)].map(m=>m[1]);
@@ -55,7 +68,7 @@ test('all 500 UI cases allow skip or all reactions then an action, save no emoti
 });
 test('reload drops only reactions, preserves pending stage/history, and short readers lose no flip text',async()=>{
   const s=setup({[KEY]:JSON.stringify(C.snapshot(initial('s041')))},{readerHeight:52,lineChars:9,innerHeight:844,visualHeight:620}),e=s.elements;
-  for(const b of e.hand.children)await b.emit('click');await e.confirm.emit('click');const flip=await s.readAll();for(const r of C.caseFor(initial('s041')).reactions)assert.ok(flip.includes(r.text));
+  for(const b of e.hand.children)await b.emit('click');await e.confirm.emit('click');const flip=await s.readAll();for(const r of C.caseFor(initial('s041')).reactions)assert.ok(flip.includes(r.title));assert.match(flip,/我願意鬆開一點點嗎/);
   const copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.game.dataset.phase,'scene');assert.ok(copy.elements.hand.children.every(b=>b.attrs['aria-pressed']==='false'));
   s.window.visualViewport.height=500;await s.window.visualViewport.emit('resize');for(const fn of s.timers.values())fn();assert.equal(e.game.style.values['--app-height'],'500px');
   await e.confirm.emit('click');assert.equal(setup(Object.fromEntries(s.data)).elements.game.dataset.phase,'response');

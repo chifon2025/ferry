@@ -27,7 +27,7 @@ const server=http.createServer((req,res)=>{
     upgrade=true;await page.locator('#menuOpen').click();await page.locator('#btnUpdate').click();
     await page.waitForFunction(()=>window.FerryFlowCore?.scenarios.length===500,{},{timeout:30000});
     assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_scenarios_v1')),oldRaw);
-    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v5'));
+    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v6'));
     await context.setOffline(true);await page.reload();
     assert.equal(await page.locator('#game').getAttribute('data-phase'),'response');
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('du_ferry_flow_v1')).legacy.phase),'response');

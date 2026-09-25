@@ -131,10 +131,37 @@
       ['其實這樣也滿好的。','我看見了眼前的一點足夠。不必急著把這份舒服變成成就，也不用要求自己永遠維持同樣的心情。']
     ]
   };
+  const releases={
+    s041:{
+      title:'先讓不甘心在這裡',
+      feel:'先不用證明同事錯了，也不用逼自己想開。停一秒，看看喉嚨、胸口或肩膀，哪裡最有感覺。讓生氣、委屈或害怕，暫時照原樣在這裡。',
+      wants:['想被肯定 · 希望熬夜的努力被看見。','想控制 · 希望對方用我能接受的方式評論。','想安心 · 怕這句評語代表自己不夠好。']
+    },
+    s003:{
+      title:'先讓等待的煩躁在這裡',
+      feel:'先不用判斷朋友重不重視你。停一秒，感覺那份急、氣或不安落在身體哪裡。它不必立刻消失，也不必替它找理由。',
+      wants:['想被重視 · 希望自己的時間也被放在心上。','想控制 · 希望現在就知道還要等多久。','想安心 · 怕催了傷感情，離開又會錯過。']
+    },
+    s201:{
+      title:'先讓沒有回音的不安在這裡',
+      feel:'先不猜對方為什麼沒回，也不急著再補一句。停一秒，讓想被回應、怕說錯話的感覺，暫時在這裡被看見。',
+      wants:['想被肯定 · 希望知道自己沒有被討厭。','想控制 · 希望對方現在就給一個答案。','想安心 · 怕沉默表示關係出了問題。']
+    },
+    s096:{
+      title:'先讓為難與內疚在這裡',
+      feel:'先不用立刻答應，也不用把同事想成壞人。停一秒，感覺那份不情願、壓力或內疚。讓它存在，不代表最後一定要拒絕。',
+      wants:['想被肯定 · 希望別人覺得自己好相處。','想控制 · 希望排班不要再打亂自己的休息。','想安心 · 怕拒絕後關係或工作受到影響。']
+    },
+    s131:{
+      title:'先讓後悔與委屈都在這裡',
+      feel:'先不用替自己辯護，也不用把自己罵成很糟的人。停一秒，讓後悔、委屈和還沒退完的氣，一起在這裡。',
+      wants:['想被肯定 · 希望對方仍願意理解或原諒自己。','想控制 · 希望剛才那句話可以立刻收回。','想安心 · 怕這次衝突傷了關係，也怕自己又犯同樣的錯。']
+    }
+  };
   const overrides=new Map(pilot.cases.map(c=>[c.id,c]));
   const scenarios=data.scenarios.map(c=>{
     const trial=overrides.get(c.id),family=reactions[c.category];if(!family||family.length!==3)throw new Error('Missing reactions: '+c.category);
-    return {...c,reactions:trial?trial.reactions:family.map(([title,text],i)=>({id:'t'+i,title,text})),actions:trial?trial.actions:c.paths.map(p=>({id:p.id,title:p.title,text:p.text,end:{title:p.title+' · 此刻',text:p.after.text}}))};
+    return {...c,reactions:trial?trial.reactions:family.map(([title,text],i)=>({id:'t'+i,title,text})),actions:trial?trial.actions:c.paths.map(p=>({id:p.id,title:p.title,text:p.text,end:{title:p.title+' · 此刻',text:p.after.text}})),release:releases[c.id]||null};
   });
   const api={categories:data.categories,scenarios};if(node)module.exports=api;else root.FerryFlowData=api;
 })(typeof globalThis==='object'?globalThis:this);
