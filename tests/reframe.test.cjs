@@ -4,7 +4,7 @@ function setup(values={},options={}){
   let active;function element(){const classes=new Set();return Object.assign(events(),{children:[],attrs:{},dataset:{},textContent:'',hidden:false,disabled:false,
     classList:{add(...names){names.forEach(n=>classes.add(n));},remove(...names){names.forEach(n=>classes.delete(n));},contains:n=>classes.has(n)},
     style:{values:{},setProperty(k,v){this.values[k]=v;}},setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;}});}
-  const elements={},html=fs.readFileSync(path.join(root,'reframe.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
+  const elements={},html=fs.readFileSync(path.join(root,'tests/fixtures/reframe-pilot.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
   elements.reader.clientHeight=options.readerHeight||160;
   Object.defineProperty(elements.storyText,'scrollHeight',{get(){return Math.ceil(Array.from(this.textContent).length/(options.lineChars||18))*26;}});
   const data=new Map(Object.entries(values)),reads=[],writes=[],timers=new Map();let timer=0;
@@ -36,11 +36,11 @@ test('trial validation and transitions reject unknown and inconsistent choices',
 test('five trial cases draw without repetition then avoid immediate repeats',()=>{
   let s=C.create(),seen=new Set([s.caseId]);for(let i=1;i<5;i++){s=C.draw(s,()=>0);assert.ok(C.valid(s));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}const last=s.caseId;s=C.draw(s,()=>0);assert.notEqual(s.caseId,last);assert.equal(s.seen.length,1);
 });
-test('trial loads its own controller without storage or network APIs',()=>{
-  const html=fs.readFileSync(path.join(root,'reframe.html'),'utf8');const scripts=[...html.matchAll(/<script src="\.\/([^" ]+)"/g)].map(m=>m[1]);
+test('archived pilot controller remains independent without storage or network APIs',()=>{
+  const html=fs.readFileSync(path.join(root,'tests/fixtures/reframe-pilot.html'),'utf8');const scripts=[...html.matchAll(/<script src="\.\/([^" ]+)"/g)].map(m=>m[1]);
   assert.deepEqual(scripts,['scenario-seeds.js','scenario-data.js','reframe-core.js','cards-layout.js','reframe.js','pwa-update.js']);
   for(const file of ['reframe-core.js','reframe.js'])assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon|innerHTML/);
-  assert.match(fs.readFileSync(path.join(root,'index.html'),'utf8'),/href="\.\/reframe.html"/);
+  assert.match(fs.readFileSync(path.join(root,'tests/fixtures/scenario-v1.html'),'utf8'),/href="\.\/reframe.html"/);
 });
 test('all 80 controller paths, skip, back, reflections, replay and rest work without touching storage',async()=>{
   for(const c of C.cases)for(let mask=0;mask<8;mask++)for(const action of [0,1]){

@@ -1,10 +1,10 @@
 /* Random situations offline shell. Never read or clear player storage. */
 'use strict';
 const CACHE_PREFIX='du-ferry:'+self.registration.scope+':';
-const CACHE_VERSION=CACHE_PREFIX+'scenarios-v4';
-const APP_SHELL=['./','./index.html','./light.css','./scenario-seeds.js','./scenario-data.js','./scenario-core.js','./cards-layout.js','./scenario.js','./pwa-update.js','./manifest.webmanifest',
+const CACHE_VERSION=CACHE_PREFIX+'scenarios-v5';
+const APP_SHELL=['./','./index.html','./light.css','./scenario-seeds.js','./scenario-data.js','./scenario-core.js','./cards-layout.js','./flow.js','./pwa-update.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png',
-  './reframe.html','./reframe.css','./reframe-core.js','./reframe.js'];
+  './flow-data.js','./reframe.css','./reframe-core.js','./flow-core.js'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_VERSION)
     .then(cache=>cache.addAll(APP_SHELL.map(url=>new Request(url,{cache:'reload'}))))
@@ -35,7 +35,7 @@ self.addEventListener('fetch',event=>{
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_VERSION);
     if(request.mode==='navigate'){
-      const page=url.pathname===new URL('./reframe.html',root).pathname?'./reframe.html':'./index.html';
+      const page='./index.html';
       return (await cache.match(page))||fetch(new URL(page,root));
     }
     const cached=await cache.match(request);

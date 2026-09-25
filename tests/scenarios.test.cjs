@@ -52,8 +52,8 @@ test('strict state validation rejects inconsistent, future, corrupt and prototyp
   for(const e of [null,{type:'next'},{type:'start'},{type:'choose',id:'r0'},{type:'choose',id:'__proto__'}])assert.equal(C.transition(s,e),s);
   const replay=C.replay(ending);assert.ok(C.valid(replay));assert.equal(replay.caseId,s.caseId);assert.deepEqual(replay.seen,s.seen);assert.equal(replay.phase,'scene');
 });
-test('active entry loads local scenario modules in order and excludes the retired story',()=>{
-  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),context={};vm.createContext(context);
+test('archived scenario shell still loads its original modules for migration regression',()=>{
+  const html=fs.readFileSync(path.join(root,'tests/fixtures/scenario-v1.html'),'utf8'),context={};vm.createContext(context);
   const scripts=Array.from(html.matchAll(/<script src="\.\/([^\"]+)"/g),m=>m[1]);
   assert.deepEqual(scripts,['scenario-seeds.js','scenario-data.js','scenario-core.js','cards-layout.js','scenario.js','pwa-update.js']);
   for(const file of scripts.slice(0,4))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
@@ -71,7 +71,7 @@ function setup(values={},options={}){
   let active;function element(){const classes=new Set();return Object.assign(events(),{children:[],attrs:{},dataset:{},textContent:'',hidden:false,disabled:false,
     classList:{add(...names){names.forEach(n=>classes.add(n));},remove(...names){names.forEach(n=>classes.delete(n));},contains:n=>classes.has(n)},
     style:{values:{},setProperty(k,v){this.values[k]=v;}},setAttribute(k,v){this.attrs[k]=v;},append(...kids){this.children.push(...kids);},replaceChildren(...kids){this.children=kids;},focus(){active=this;},showModal(){this.open=true;},close(){this.open=false;}});}
-  const elements={},html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
+  const elements={},html=fs.readFileSync(path.join(root,'tests/fixtures/scenario-v1.html'),'utf8');for(const [,id]of html.matchAll(/id="([^"]+)"/g))elements[id]=element();
   elements.reader.clientHeight=options.readerHeight||160;
   Object.defineProperty(elements.storyText,'scrollHeight',{get(){return Math.ceil(Array.from(this.textContent).length/(options.lineChars||18))*26;}});
   const data=new Map(Object.entries(values)),reads=[],writes=[],timers=new Map();let timer=0;

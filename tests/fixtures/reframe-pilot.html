@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#132e35">
-  <meta name="description" content="渡・順流成真。500 種隨機生活情境。遇見一件事，複選第一反應、翻牌換個角度，再選眼前的一步。">
-  <title>渡 · 遇見生活</title>
+  <meta name="description" content="渡・順流成真。5 個原創轉念情境試玩。認出第一反應，翻牌換個角度，再選眼前的一步。">
+  <title>渡 · 轉念試玩</title>
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
@@ -13,18 +13,15 @@
   <link rel="stylesheet" href="./reframe.css">
   <script src="./scenario-seeds.js" defer></script>
   <script src="./scenario-data.js" defer></script>
-  <script src="./scenario-core.js" defer></script>
   <script src="./reframe-core.js" defer></script>
-  <script src="./flow-data.js" defer></script>
-  <script src="./flow-core.js" defer></script>
   <script src="./cards-layout.js" defer></script>
-  <script src="./flow.js" defer></script>
+  <script src="./reframe.js" defer></script>
   <script src="./pwa-update.js" defer></script>
 </head>
 <body>
-<main class="game" id="game" data-landscape="dawn" data-mode="flow">
-  <header class="top"><a class="brand" href="./" aria-label="渡，回到目前情境"><strong>渡</strong><span>順流成真<small>遇見生活</small></span></a><button class="menu-button" id="menuOpen" aria-label="開啟功能選單" aria-haspopup="dialog">☰</button></header>
-  <div class="chapter-line"><span id="chapterName">隨機生活情境</span><span id="ageLabel">500 種生活片刻</span></div>
+<main class="game" id="game" data-landscape="dawn" data-mode="reframe">
+  <header class="top"><a class="brand" href="./" aria-label="渡，回到原本 500 情境"><strong>渡</strong><span>順流成真<small>轉念試玩</small></span></a><button class="menu-button" id="menuOpen" aria-label="開啟功能選單" aria-haspopup="dialog">☰</button></header>
+  <div class="chapter-line"><span id="chapterName">轉念試玩</span><span id="ageLabel">5 個情境</span></div>
   <div class="journey-track" id="journeyTrack" aria-hidden="true"></div>
   <section class="stage" aria-labelledby="sceneTitle">
     <div class="landscape" aria-hidden="true">
@@ -58,16 +55,16 @@
   <div class="ending-tools" id="endingTools" hidden><button id="replay">換一種走法</button><button id="rest">先停在這裡</button></div>
   <p class="footnote" id="footerNote">沒有分數，也沒有必須成為的樣子。</p>
   </div>
-  <div class="save-notice" id="saveNotice" hidden><p id="saveStatus" role="status"></p><button id="loadLatest" hidden>讀取最新進度</button><button id="dismissNotice">知道了</button></div>
   <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
 </main>
 <dialog id="menu" aria-labelledby="menuTitle">
   <div class="menu-head"><h2 id="menuTitle">生活中的停靠</h2><button id="menuClose" aria-label="關閉功能選單">×</button></div>
-  <button class="menu-row" id="install">安裝手機 App</button><p class="menu-status" id="installStatus">加入主畫面，下次從這一頁繼續。</p>
+  <button class="menu-row" id="install">安裝手機 App</button><p class="menu-status" id="installStatus">安裝後開啟渡的主頁；從功能選單可進入轉念試玩。</p>
   <button class="menu-row" id="btnUpdate">檢查更新</button><p class="menu-status" id="updateStatus" role="status">連線時自動檢查新版</p>
-  <label for="chapterChoice">想遇見哪一類生活情境？</label><select id="chapterChoice"></select><p class="menu-status">25 類、共 500 個情境。點「換個情境」才會換掉目前這一件；同類抽完會重新洗牌，不計分、不需集滿。</p><button class="menu-row" id="chapterStart">換個情境</button>
-  <details><summary>怎麼玩</summary><p>每次隨機遇見一件事。第一反應可複選，再點可取消；選好按「翻牌看看」，逐一看看自己在意什麼。都不像也能略過。接著選一個做法，預覽後確認，就能看到後續。收尾後可再遇見一件事、換一種走法，或先停在這裡。</p><p>「照一照心裡」與「往後看看」可跳過，不會記錄你的感受，也不會改變外部結果。文字用左右箭頭翻頁，不用往下拉主畫面。</p><p>同一輪優先抽尚未遇見的情境。事情與行動進度會保存，反應勾選只留在當前頁面：翻牌時重開會回到未勾選，進入行動後重開仍接續行動。切換類別保留其他類別的抽取紀錄。</p></details>
-  <details><summary>關於渡</summary><p>不走固定主角或章節故事。500 個原創生活情境，依 25 種主題設計共用的反應、轉念與行動文字，另保留五個試玩情境的專屬內容，練習看見想要與不想要，再選眼前能做的一步。</p><p>這不是宗教考試或心理治療，也不保證願望成真。放下不等於放棄必要的醫療、安全、責任與界線。可以離開，或仍然在意。</p><p>沒有配樂、水聲、倒數、付費抽卡、帳號或追蹤分析。進度只存這台裝置，反應不存檔、不上傳。首次升級會讀取舊情境進度，接續未完的一局；舊紀錄原樣保留，不覆寫、不清空。</p></details>
+  <a class="menu-row" href="./">回到原本 500 個情境</a>
+  <label for="chapterChoice">想試哪一件事？</label><select id="chapterChoice"></select><p class="menu-status">5 個試玩情境。點下方按鈕才會換場景；本頁不儲存你的感受或選擇。</p><button class="menu-row" id="chapterStart">換個情境</button>
+  <details><summary>怎麼玩</summary><p>先勾選像自己的第一反應（可複選，再點可取消），按「翻牌看看」一起看牌的另一面；若都不像，可略過。再選一個眼前能做的動作，確認後看後續。</p><p>不是考你能不能想開，也不要求你立刻平靜。翻牌的角度不一定適合每個人，可以調整選擇，或隨時離開。</p><p>文字用左右箭頭翻頁，主畫面不用往下拉。同一輪五件事不重複；重新整理會重開試玩。原本 500 情境的紀錄不受影響。</p></details>
+  <details><summary>關於這次試玩</summary><p>這不是心理治療，也不保證練習後一定養成習慣或改變外部結果。換個角度不等於忽略安全、責任或自己的界線。</p><p>沒有配樂、計分、倒數、帳號或追蹤分析。不讀寫你的遊戲進度，也不保存、上傳本頁的感受選擇。</p></details>
 </dialog>
 <noscript><p class="no-script">請開啟 JavaScript，才能開始這段互動旅程。</p></noscript>
 </body>

@@ -22,7 +22,7 @@ test('PWA keeps identity and removes old shortcut descriptions',()=>{
   for(const icon of m.icons)assert.ok(fs.existsSync(path.join(root,icon.src)));
 });
 test('old entry URLs are navigation-only stubs',()=>{
-  for(const file of ['boat.html','legacy.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert.match(html,/http-equiv="refresh" content="0;url=\.\/"/);assert.doesNotMatch(html,/<script|<audio|<canvas/);}
+  for(const file of ['boat.html','legacy.html','reframe.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert.match(html,/http-equiv="refresh" content="0;url=\.\/"/);assert.doesNotMatch(html,/<script|<audio|<canvas/);}
 });
 test('complete card shell is fetched fresh before activation',async()=>{
   const w=worker();let done;w.handlers.install({waitUntil:p=>done=p});await done;
@@ -31,14 +31,14 @@ test('complete card shell is fetched fresh before activation',async()=>{
   const bad=worker({failInstall:true});bad.handlers.install({waitUntil:p=>done=p});await assert.rejects(done,/offline/);assert.equal(bad.skipped,false);
 });
 test('activation removes only old scoped caches and redirects only ferry tabs without deadlock',async()=>{
-  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'scenarios-v4','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
+  const keys=[prefix+'boat-v1',prefix+'rebuild-v1',prefix+'scenarios-v5','du-ferry:https://example.com/other/:boat-v1','unrelated-cache'];
   const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;
   assert.deepEqual(w.deleted,keys.slice(0,2));assert.equal(w.claimed,true);assert.equal(w.navigated.length,2);
   assert.ok(w.navigated.every(v=>v.to===scope));
 });
 test('fresh install and future card updates do not force-navigation of current story tabs',async()=>{
-  for(const keys of [[prefix+'scenarios-v4'],[prefix+'cards-v5',prefix+'cards-v6',prefix+'light-v1',prefix+'light-v2',prefix+'scenarios-v0',prefix+'scenarios-v1',prefix+'scenarios-v4']]){
-    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'scenarios-v4'));
+  for(const keys of [[prefix+'scenarios-v5'],[prefix+'cards-v5',prefix+'cards-v6',prefix+'light-v1',prefix+'light-v2',prefix+'scenarios-v0',prefix+'scenarios-v1',prefix+'scenarios-v5']]){
+    const w=worker({keys});let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.navigated,[]);assert.deepEqual(w.deleted,keys.filter(k=>k!==prefix+'scenarios-v5'));
   }
 });
 test('all in-scope navigations serve the new shell offline and never fetch an old game',async()=>{
@@ -52,8 +52,8 @@ test('out-of-scope requests are untouched and player storage is never accessed',
   }
   for(const file of ['sw.js','pwa-update.js','index.html'])assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/localStorage|indexedDB|sessionStorage/);
 });
-test('only the exact trial navigation serves its own cached shell',async()=>{
-  const w=worker();for(const [file,body] of [['reframe.html','trial'],['reframe.html?source=menu','trial'],['nested/reframe.html','rebuild'],['reframe.html-other','rebuild']]){
+test('former pilot and all legacy navigations serve the unified flow',async()=>{
+  const w=worker();for(const [file,body] of [['reframe.html','rebuild'],['reframe.html?source=menu','rebuild'],['nested/reframe.html','rebuild'],['reframe.html-other','rebuild']]){
     let done;w.handlers.fetch({request:{method:'GET',mode:'navigate',url:scope+file},respondWith:p=>done=p});assert.equal(await(await done).text(),body);
   }assert.equal(w.fetched.length,0);
 });
