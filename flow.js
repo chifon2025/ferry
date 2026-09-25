@@ -139,7 +139,7 @@
   $('menuClose').addEventListener('click',()=>$('menu').close());
   $('chapterStart').addEventListener('click',()=>{const id=$('chapterChoice').value;if(!conflict&&C.filters.includes(id)&&save(C.draw(state,id))){$('menu').close();render(true);}});
   $('chapterChoice').replaceChildren();
-  for(const group of [{id:'all',name:'全部情境 · 隨機遇見'},...C.categories]){const option=document.createElement('option');option.value=group.id;option.textContent=group.name;$('chapterChoice').append(option);}
+  for(const group of [{id:'all',name:'全部情境 · 隨機遇見'},{id:'release',name:'釋放練習 · 5 則'},...C.categories]){const option=document.createElement('option');option.value=group.id;option.textContent=group.name;$('chapterChoice').append(option);}
   $('dismissNotice').addEventListener('click',()=>{if(!conflict)$('saveNotice').hidden=true;});
   $('loadLatest').addEventListener('click',()=>{conflict=false;writable=true;lastRaw=null;state=C.create();$('saveNotice').hidden=true;$('loadLatest').hidden=true;restore();if(lastRaw===null&&writable)save(state);render(true);});
   window.addEventListener('storage',e=>{if(e.key===KEY||e.key===null){conflict=true;notice('另一個分頁已更新情境。請讀取最新進度再繼續。');$('loadLatest').hidden=false;}});

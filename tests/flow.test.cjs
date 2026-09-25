@@ -40,6 +40,11 @@ test('500 random draws and all 25 filters retain history and avoid immediate rep
   let other=C.create('waiting',()=>0);for(let i=0;i<21;i++)other=C.draw(other,'changes',()=>0);assert.ok(other.seen.includes('s001'));
   for(const n of [NaN,Infinity,-1,1,99])assert.ok(C.valid(C.create('all',()=>n)));
 });
+test('release filter draws only the five pilot cases without repeats and rolls over safely',()=>{
+  const expected=new Set(['s041','s003','s201','s096','s131']);let s=C.create('release',()=>0),seen=new Set([s.caseId]);assert.ok(expected.has(s.caseId));
+  for(let i=1;i<5;i++){s=C.draw(s,'release',()=>0);assert.ok(C.valid(s));assert.ok(expected.has(s.caseId));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}
+  assert.deepEqual(seen,expected);const last=s.caseId;s=C.draw(s,'release',()=>0);assert.ok(expected.has(s.caseId));assert.notEqual(s.caseId,last);assert.equal(s.filter,'release');assert.equal(s.seen.length,1);
+});
 test('strict runtime and saved validation rejects corrupt, future or emotion-containing saves',()=>{
   const s=initial('s001');for(const bad of [null,{},[],{...s,v:2},{...s,extra:1},{...s,caseId:'bad'},{...s,filter:'bad'},{...s,seen:[]},{...s,seen:['s001','s001']},{...s,phase:'flip'},{...s,action:'a0'},{...s,reactions:['bad']},{...s,reactions:['t0','t0']},{...s,legacy:{}}])assert.equal(C.valid(bad),false);
   for(const bad of [null,{},s,{...C.snapshot(s),phase:'flip'},{...C.snapshot(s),v:2}])assert.throws(()=>C.restore(bad),/Invalid/);
@@ -57,7 +62,7 @@ test('every legacy scenario and chosen action resumes unchanged until the next n
 });
 test('all 500 UI cases allow skip or all reactions then an action, save no emotions, and preserve old records',async()=>{
   for(const c of C.scenarios)for(const mask of [0,7]){
-    const records={[KEY]:JSON.stringify(C.snapshot(initial(c.id))),[OLD]:'old untouched',du_ferry_cards_v1:'older untouched'},s=setup(records),e=s.elements;assert.equal(e.hand.children.length,3);assert.equal(e.chapterChoice.children.length,26);
+    const records={[KEY]:JSON.stringify(C.snapshot(initial(c.id))),[OLD]:'old untouched',du_ferry_cards_v1:'older untouched'},s=setup(records),e=s.elements;assert.equal(e.hand.children.length,3);assert.equal(e.chapterChoice.children.length,27);
     if(mask){for(const b of e.hand.children)await b.emit('click');assert.equal(s.writes.length,0);await e.confirm.emit('click');assert.equal(s.writes.length,0);assert.equal(e.game.dataset.phase,'flip');await e.backStory.emit('click');assert.ok(e.hand.children.every(b=>b.attrs['aria-pressed']==='true'));await e.confirm.emit('click');}
     await e.confirm.emit('click');assert.equal(e.game.dataset.phase,'response');assert.equal(JSON.parse(s.data.get(KEY)).phase,'response');assert.equal(Object.hasOwn(JSON.parse(s.data.get(KEY)),'reactions'),false);
     await e.hand.children[mask?1:0].emit('click');for(const tool of ['mirror','timeLens']){const raw=s.data.get(KEY);await e[tool].emit('click');await e.confirm.emit('click');assert.equal(s.data.get(KEY),raw);assert.equal(e.confirm.disabled,false);}
@@ -65,6 +70,11 @@ test('all 500 UI cases allow skip or all reactions then an action, save no emoti
     await e.rest.emit('click');await e.confirm.emit('click');await e.replay.emit('click');assert.equal(e.hand.children.length,3);assert.ok(e.hand.children.every(b=>b.attrs['aria-pressed']==='false'));
     assert.equal(s.data.get(OLD),'old untouched');assert.equal(s.data.get('du_ferry_cards_v1'),'older untouched');assert.ok(s.writes.every(([k,v])=>k===KEY&&!v.includes('reactions')));
   }
+});
+test('menu exposes the five-case release filter and changes only after explicit confirmation',async()=>{
+  const s=setup(),e=s.elements;await e.menuOpen.emit('click');assert.equal(e.chapterChoice.children[1].textContent,'釋放練習 · 5 則');e.chapterChoice.value='release';const before=s.data.get(KEY);assert.equal(s.data.get(KEY),before);
+  await e.chapterStart.emit('click');const state=C.restore(JSON.parse(s.data.get(KEY)));assert.equal(state.filter,'release');assert.ok(C.caseFor(state).release);assert.equal(e.menu.open,false);
+  const copy=setup(Object.fromEntries(s.data));await copy.elements.menuOpen.emit('click');assert.equal(copy.elements.chapterChoice.value,'release');
 });
 test('reload drops only reactions, preserves pending stage/history, and short readers lose no flip text',async()=>{
   const s=setup({[KEY]:JSON.stringify(C.snapshot(initial('s041')))},{readerHeight:52,lineChars:9,innerHeight:844,visualHeight:620}),e=s.elements;
