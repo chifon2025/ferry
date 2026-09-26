@@ -29,7 +29,7 @@ const assert=require('node:assert/strict');
       }
       return {allOpeningsChecked:checked,width:innerWidth,height:innerHeight,maxPages};
     });
-    assert.equal(result.allOpeningsChecked,500);assert.deepEqual(errors,[]);
+    assert.equal(result.allOpeningsChecked,520);assert.deepEqual(errors,[]);
     console.log(JSON.stringify({...result,errors}));
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

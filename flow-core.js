@@ -7,8 +7,8 @@
   function caseFor(s){return byId.get(s.caseId);}
   function valid(s){
     if(!s||typeof s!=='object'||Array.isArray(s)||s.v!==1||Object.keys(s).length!==keys.length||Object.keys(s).some(k=>!keys.includes(k)))return false;
-    const c=caseFor(s);if(!c||!filters.includes(s.filter)||(s.filter==='release'?!c.release:s.filter!=='all'&&c.category!==s.filter)||!phases.includes(s.phase))return false;
-    if(!Array.isArray(s.seen)||!s.seen.includes(s.caseId)||s.seen.length>500||new Set(s.seen).size!==s.seen.length||s.seen.some(id=>!byId.has(id)))return false;
+    const c=caseFor(s);if(!c||!filters.includes(s.filter)||(s.filter==='release'?c.release?.group!=='pilot':s.filter!=='all'&&c.category!==s.filter)||!phases.includes(s.phase))return false;
+    if(!Array.isArray(s.seen)||!s.seen.includes(s.caseId)||s.seen.length>ids.length||new Set(s.seen).size!==s.seen.length||s.seen.some(id=>!byId.has(id)))return false;
     if(!Array.isArray(s.reactions)||new Set(s.reactions).size!==s.reactions.length||s.reactions.some(id=>!c.reactions.some(r=>r.id===id)))return false;
     if(s.legacy!==null)return s.reactions.length===0&&O.valid(s.legacy)&&['response','ending'].includes(s.phase)&&s.legacy.phase===s.phase&&s.legacy.caseId===s.caseId&&s.legacy.filter===s.filter&&s.action===s.legacy.action&&s.seen.join()===s.legacy.seen.join();
     if(s.phase==='flip'&&!s.reactions.length)return false;
@@ -16,7 +16,7 @@
   }
   function draw(previous=null,filter=previous?.filter||'all',random=Math.random){
     if(previous&&!valid(previous))throw new Error('Invalid state');if(!filters.includes(filter))throw new Error('Unknown filter');
-    let seen=previous?[...previous.seen]:[];const pool=ids.filter(id=>filter==='all'||filter==='release'&&byId.get(id).release||byId.get(id).category===filter),poolSet=new Set(pool),visited=new Set(seen);
+    let seen=previous?[...previous.seen]:[];const pool=ids.filter(id=>filter==='all'||filter==='release'&&byId.get(id).release?.group==='pilot'||byId.get(id).category===filter),poolSet=new Set(pool),visited=new Set(seen);
     let available=pool.filter(id=>!visited.has(id));if(!available.length){seen=seen.filter(id=>!poolSet.has(id));available=pool.filter(id=>id!==previous?.caseId);}
     let n=random();if(!Number.isFinite(n))n=0;n=Math.max(0,Math.min(n,1-Number.EPSILON));const caseId=available[Math.floor(n*available.length)];
     return {v:1,caseId,filter,phase:'scene',action:null,legacy:null,seen:[...seen,caseId],reactions:[]};

@@ -2,8 +2,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const C=require('../flow-core.js'),O=require('../scenario-core.js'),L=require('../cards-layout.js'),root=path.resolve(__dirname,'..'),KEY='du_ferry_flow_v1',OLD='du_ferry_scenarios_v1';
 const initial=id=>({...C.create(),caseId:id,seen:[id]});
-test('all 500 stable situations support all 8000 combination/action paths without emotion rewards',()=>{
-  assert.equal(C.scenarios.length,500);assert.equal(C.categories.length,25);let paths=0;
+test('all 520 stable situations support all 8320 combination/action paths without emotion rewards',()=>{
+  assert.equal(C.scenarios.length,520);assert.equal(C.categories.length,26);let paths=0;
   for(const c of C.scenarios){
     assert.deepEqual(c.event,O.scenarios.find(o=>o.id===c.id).event);assert.equal(c.reactions.length,3);assert.equal(c.actions.length,2);const ends=[new Set(),new Set()];
     for(let mask=0;mask<8;mask++)for(let a=0;a<2;a++){
@@ -12,16 +12,19 @@ test('all 500 stable situations support all 8000 combination/action paths withou
       assert.ok(C.valid(s));assert.equal(s.phase,'response');s=C.transition(s,{type:'choose',id:'a'+a});assert.equal(s.phase,'ending');assert.ok(C.valid(s));ends[a].add(C.sceneFor(s).text);paths++;
       assert.equal(C.restore(C.snapshot(s)).reactions.length,0);assert.ok(!JSON.stringify(C.snapshot(s)).includes('reactions'));
     }assert.equal(ends[0].size,1);assert.equal(ends[1].size,1);assert.notEqual([...ends[0]][0],[...ends[1]][0]);
-  }assert.equal(paths,8000);
+  }assert.equal(paths,8320);
 });
-test('only the five selected cases use the release pause; the other 495 retain reframing',()=>{
-  const ids=['s041','s003','s201','s096','s131'];assert.deepEqual(C.scenarios.filter(c=>c.release).map(c=>c.id).sort(),[...ids].sort());
+test('five pilots and twenty money-pressure cases use the release pause; the other 495 retain reframing',()=>{
+  const ids=['s041','s003','s201','s096','s131'];assert.deepEqual(C.scenarios.filter(c=>c.release?.group==='pilot').map(c=>c.id).sort(),[...ids].sort());
+  assert.equal(C.scenarios.filter(c=>c.release?.group==='money').length,20);assert.equal(new Set(C.scenarios.filter(c=>c.release?.group==='money').map(c=>c.reactions.map(r=>r.title).join('|'))).size,20);
   for(const c of C.scenarios){let s=initial(c.id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});const scene=C.sceneFor(s);
-    if(ids.includes(c.id)){assert.match(scene.text,/剛才心裡冒出/);assert.match(scene.text,/你可能只是很想/);assert.match(scene.text,/我可以先不抓這麼緊嗎/);assert.match(scene.text,/還不能，也沒關係/);assert.doesNotMatch(scene.text,/想被肯定|想控制|想安心|我能允許|不用急著跟著它們走/);}
+    if(c.release){assert.match(scene.text,/剛才心裡冒出/);assert.match(scene.text,/你可能只是很想/);assert.match(scene.text,/我可以先不抓這麼緊嗎/);assert.match(scene.text,/還不能，也沒關係/);assert.doesNotMatch(scene.text,/想被肯定|想控制|想安心|我能允許|不用急著跟著它們走/);}
     else {assert.match(scene.text,/不用急著跟著它們走/);assert.doesNotMatch(scene.text,/我可以先不抓這麼緊嗎/);}
   }
   const vivid=new Map([['s041','想頂回去'],['s003','怕催了會被嫌煩'],['s201','又滑回對話框'],['s096','憑什麼又是我'],['s131','又不甘心像是自己全錯']]);
   for(const [id,phrase] of vivid){let s=initial(id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});assert.match(C.sceneFor(s).text,new RegExp(phrase));}
+  const moneyVivid=new Map([['s501','房租就要扣了'],['s508','機具停著'],['s509','想到錢不表示你不愛他'],['s518','立刻辭職和永遠忍耐'],['s520','腦子卻不肯下班']]);
+  for(const [id,phrase] of moneyVivid){let s=initial(id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});assert.match(C.sceneFor(s).text,new RegExp(phrase));}
 });
 test('five release cases show release labels and button while an ordinary case keeps existing labels',async()=>{
   for(const id of ['s041','s003','s201','s096','s131','s001']){const s=setup({[KEY]:JSON.stringify(C.snapshot(initial(id)))}),e=s.elements;await e.hand.children[0].emit('click');await e.confirm.emit('click');
@@ -32,12 +35,12 @@ test('five release cases show release labels and button while an ordinary case k
 test('new homepage loads unified flow while old pilot URL redirects, all content stays original/local',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),scripts=[...html.matchAll(/<script src="\.\/([^" ]+)"/g)].map(m=>m[1]);
   assert.deepEqual(scripts,['scenario-seeds.js','scenario-data.js','scenario-core.js','reframe-core.js','flow-data.js','flow-core.js','cards-layout.js','flow.js','pwa-update.js']);
-  const context={};vm.createContext(context);for(const file of scripts.slice(0,7))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);assert.equal(context.FerryFlowCore.scenarios.length,500);
+  const context={};vm.createContext(context);for(const file of scripts.slice(0,7))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);assert.equal(context.FerryFlowCore.scenarios.length,520);
   for(const file of ['flow-data.js','flow-core.js','flow.js']){const source=fs.readFileSync(path.join(root,file),'utf8');assert.doesNotMatch(source,/fetch\(|XMLHttpRequest|sendBeacon|innerHTML|[没现离还写给开满们处独这来后为会说时从变断决错却见项过装]/);}
   assert.doesNotMatch(html,/轉念試玩 · 5/);assert.match(fs.readFileSync(path.join(root,'reframe.html'),'utf8'),/0;url=\.\//);
 });
-test('500 random draws and all 25 filters retain history and avoid immediate repeats',()=>{
-  let s=C.create('all',()=>0),seen=new Set([s.caseId]);for(let i=1;i<500;i++){s=C.draw(C.restore(C.snapshot(s)),'all',()=>.37);assert.ok(C.valid(s));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}assert.equal(seen.size,500);assert.notEqual(C.draw(s).caseId,s.caseId);
+test('520 random draws and all 26 filters retain history and avoid immediate repeats',()=>{
+  let s=C.create('all',()=>0),seen=new Set([s.caseId]);for(let i=1;i<520;i++){s=C.draw(C.restore(C.snapshot(s)),'all',()=>.37);assert.ok(C.valid(s));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}assert.equal(seen.size,520);assert.notEqual(C.draw(s).caseId,s.caseId);
   for(const cat of C.categories){let s=C.create(cat.id,()=>0),seen=new Set([s.caseId]);for(let i=1;i<20;i++){s=C.draw(s);assert.equal(C.caseFor(s).category,cat.id);assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}assert.notEqual(C.draw(s).caseId,s.caseId);}
   let other=C.create('waiting',()=>0);for(let i=0;i<21;i++)other=C.draw(other,'changes',()=>0);assert.ok(other.seen.includes('s001'));
   for(const n of [NaN,Infinity,-1,1,99])assert.ok(C.valid(C.create('all',()=>n)));
@@ -46,6 +49,12 @@ test('release filter draws only the five pilot cases without repeats and rolls o
   const expected=new Set(['s041','s003','s201','s096','s131']);let s=C.create('release',()=>0),seen=new Set([s.caseId]);assert.ok(expected.has(s.caseId));
   for(let i=1;i<5;i++){s=C.draw(s,'release',()=>0);assert.ok(C.valid(s));assert.ok(expected.has(s.caseId));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}
   assert.deepEqual(seen,expected);const last=s.caseId;s=C.draw(s,'release',()=>0);assert.ok(expected.has(s.caseId));assert.notEqual(s.caseId,last);assert.equal(s.filter,'release');assert.equal(s.seen.length,1);
+});
+test('money-pressure filter draws twenty dedicated cases without repeats and never leaks into five-case filter',()=>{
+  const expected=new Set(Array.from({length:20},(_,i)=>'s'+(501+i)));let s=C.create('money_pressure',()=>0),seen=new Set([s.caseId]);
+  for(let i=1;i<20;i++){s=C.draw(s,'money_pressure',()=>0);assert.ok(C.valid(s));assert.ok(expected.has(s.caseId));assert.ok(!seen.has(s.caseId));seen.add(s.caseId);}
+  assert.deepEqual(seen,expected);assert.equal(s.seen.length,20);assert.equal(C.caseFor(s).release.group,'money');
+  for(let i=0;i<20;i++)assert.ok(!expected.has(C.create('release',()=>i/20).caseId));
 });
 test('strict runtime and saved validation rejects corrupt, future or emotion-containing saves',()=>{
   const s=initial('s001');for(const bad of [null,{},[],{...s,v:2},{...s,extra:1},{...s,caseId:'bad'},{...s,filter:'bad'},{...s,seen:[]},{...s,seen:['s001','s001']},{...s,phase:'flip'},{...s,action:'a0'},{...s,reactions:['bad']},{...s,reactions:['t0','t0']},{...s,legacy:{}}])assert.equal(C.valid(bad),false);
@@ -62,9 +71,9 @@ test('every legacy scenario and chosen action resumes unchanged until the next n
     }
   }
 });
-test('all 500 UI cases allow skip or all reactions then an action, save no emotions, and preserve old records',async()=>{
+test('all 520 UI cases allow skip or all reactions then an action, save no emotions, and preserve old records',async()=>{
   for(const c of C.scenarios)for(const mask of [0,7]){
-    const records={[KEY]:JSON.stringify(C.snapshot(initial(c.id))),[OLD]:'old untouched',du_ferry_cards_v1:'older untouched'},s=setup(records),e=s.elements;assert.equal(e.hand.children.length,3);assert.equal(e.chapterChoice.children.length,27);
+    const records={[KEY]:JSON.stringify(C.snapshot(initial(c.id))),[OLD]:'old untouched',du_ferry_cards_v1:'older untouched'},s=setup(records),e=s.elements;assert.equal(e.hand.children.length,3);assert.equal(e.chapterChoice.children.length,28);
     if(mask){for(const b of e.hand.children)await b.emit('click');assert.equal(s.writes.length,0);await e.confirm.emit('click');assert.equal(s.writes.length,0);assert.equal(e.game.dataset.phase,'flip');await e.backStory.emit('click');assert.ok(e.hand.children.every(b=>b.attrs['aria-pressed']==='true'));await e.confirm.emit('click');}
     await e.confirm.emit('click');assert.equal(e.game.dataset.phase,'response');assert.equal(JSON.parse(s.data.get(KEY)).phase,'response');assert.equal(Object.hasOwn(JSON.parse(s.data.get(KEY)),'reactions'),false);
     await e.hand.children[mask?1:0].emit('click');for(const tool of ['mirror','timeLens']){const raw=s.data.get(KEY);await e[tool].emit('click');await e.confirm.emit('click');assert.equal(s.data.get(KEY),raw);assert.equal(e.confirm.disabled,false);}
@@ -74,7 +83,7 @@ test('all 500 UI cases allow skip or all reactions then an action, save no emoti
   }
 });
 test('menu exposes the five-case release filter and changes only after explicit confirmation',async()=>{
-  const s=setup(),e=s.elements;await e.menuOpen.emit('click');assert.equal(e.chapterChoice.children[1].textContent,'釋放練習 · 5 則');e.chapterChoice.value='release';const before=s.data.get(KEY);assert.equal(s.data.get(KEY),before);
+  const s=setup(),e=s.elements;await e.menuOpen.emit('click');assert.equal(e.chapterChoice.children[1].textContent,'釋放練習 · 5 則');assert.ok(e.chapterChoice.children.some(o=>o.textContent==='金錢壓力 · 20 則'));e.chapterChoice.value='release';const before=s.data.get(KEY);assert.equal(s.data.get(KEY),before);
   await e.chapterStart.emit('click');const state=C.restore(JSON.parse(s.data.get(KEY)));assert.equal(state.filter,'release');assert.ok(C.caseFor(state).release);assert.equal(e.menu.open,false);
   const copy=setup(Object.fromEntries(s.data));await copy.elements.menuOpen.emit('click');assert.equal(copy.elements.chapterChoice.value,'release');
 });

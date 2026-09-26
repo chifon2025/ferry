@@ -66,7 +66,7 @@
     const ch=C.caseFor(state),index=C.phases.indexOf(state.phase);
     $('game').dataset.landscape=ch.landscape;$('game').dataset.phase=state.phase;
     $('chapterName').textContent='情境 '+ch.id.slice(1)+' · '+ch.categoryName;
-    $('ageLabel').textContent='500 種生活片刻';
+    $('ageLabel').textContent='520 種生活片刻';
     $('landscapeCaption').textContent='光，一直都在';
     document.title='渡 · '+ch.title;
     $('journeyTrack').replaceChildren();

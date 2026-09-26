@@ -1,5 +1,5 @@
 'use strict';
-// Isolated loopback server reproduces an installed 500 original scenarios -> unified reframing update.
+// Isolated loopback server reproduces an installed 500-scenario version -> current 520-scenario update.
 const {chromium}=require(process.env.FERRY_PLAYWRIGHT_PATH||'playwright');
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),baseline='5cbf1f7c01ba1d123b51821851c191daf0c34347';
@@ -25,9 +25,9 @@ const server=http.createServer((req,res)=>{
     await page.goto(new URL('reframe.html?offline-test',url).href);
     await page.locator('#hand button').first().click();await page.locator('#confirm').click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'flip');
     upgrade=true;await page.locator('#menuOpen').click();await page.locator('#btnUpdate').click();
-    await page.waitForFunction(()=>window.FerryFlowCore?.scenarios.length===500,{},{timeout:30000});
+    await page.waitForFunction(()=>window.FerryFlowCore?.scenarios.length===520,{},{timeout:30000});
     assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_scenarios_v1')),oldRaw);
-    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v8'));
+    const keys=await page.evaluate(()=>caches.keys());assert.equal(keys.length,1);assert.ok(keys[0].endsWith('scenarios-v9'));
     await context.setOffline(true);await page.reload();
     assert.equal(await page.locator('#game').getAttribute('data-phase'),'response');
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('du_ferry_flow_v1')).legacy.phase),'response');

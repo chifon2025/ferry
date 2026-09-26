@@ -9,7 +9,7 @@
     if(!s||typeof s!=='object'||Array.isArray(s)||s.v!==1||!byId.has(s.caseId)||!filters.includes(s.filter)||!phases.includes(s.phase))return false;
     const keys=['v','caseId','filter','phase','action','reply','seen'];
     if(Object.keys(s).length!==keys.length||Object.keys(s).some(k=>!keys.includes(k)))return false;
-    if(!Array.isArray(s.seen)||s.seen.length>500||!s.seen.includes(s.caseId)||new Set(s.seen).size!==s.seen.length||s.seen.some(id=>!byId.has(id)))return false;
+    if(!Array.isArray(s.seen)||s.seen.length>ids.length||!s.seen.includes(s.caseId)||new Set(s.seen).size!==s.seen.length||s.seen.some(id=>!byId.has(id)))return false;
     if(s.filter!=='all'&&caseFor(s).category!==s.filter)return false;
     if(s.phase==='scene')return s.action===null&&s.reply===null;
     const p=pathFor(s);if(!p)return false;

@@ -2,17 +2,17 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),C=require('../scenario-core.js'),L=require('../cards-layout.js'),KEY='du_ferry_scenarios_v1';
 const initial=id=>({v:1,caseId:id,phase:'scene',filter:'all',seen:[id],action:null,reply:null});
-test('vivid rewrite keeps all 500 identities and facts stable with short authored openings',()=>{
+test('520 identities and facts stay stable with short authored openings',()=>{
   const seeds=require('../scenario-seeds.js').groups,crypto=require('node:crypto');
   const identity=seeds.map(g=>[g.id,g.rows.trim().split('\n').map(row=>{const [title,opening,fact]=row.split('|');assert.ok(opening.length>=30&&opening.length<=80,title+' reading budget');return [title,fact.trim()];})]);
   // Changing this fingerprint means a scenario identity or original decision premise changed.
-  assert.equal(crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex'),'f2612f4b8abae39dc5ab1487001dd92e85cc68ca2ba830f31ca35624bc73283e');
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex'),'1701ce69c48c6916b590bc856bb687ae438c0e9484ce72233dab3cb8eeffb616');
   for(const c of C.scenarios)for(const p of c.paths){assert.ok(p.after.text.length>50);for(const r of p.replies)assert.ok(r.end.text.startsWith(r.text+'\n\n'));}
 });
-test('500 unique situations across 25 categories expose 2000 valid distinct context-bound routes',()=>{
-  assert.equal(C.scenarios.length,500);assert.equal(C.categories.length,25);
-  assert.equal(new Set(C.scenarios.map(s=>s.title)).size,500);
-  assert.equal(new Set(C.scenarios.map(s=>s.event.text)).size,500);
+test('520 unique situations across 26 categories expose 2080 valid distinct context-bound routes',()=>{
+  assert.equal(C.scenarios.length,520);assert.equal(C.categories.length,26);
+  assert.equal(new Set(C.scenarios.map(s=>s.title)).size,520);
+  assert.equal(new Set(C.scenarios.map(s=>s.event.text)).size,520);
   const ends=new Set();let count=0;
   for(const group of C.categories)assert.equal(C.scenarios.filter(s=>s.category===group.id).length,20);
   for(const c of C.scenarios){
@@ -25,15 +25,15 @@ test('500 unique situations across 25 categories expose 2000 valid distinct cont
       assert.notEqual(JSON.stringify(s),before);assert.match(r.end.text,/回看起初的線索/);ends.add(r.end.text);count++;
     }}
   }
-  assert.equal(count,2000);assert.equal(ends.size,2000);
+  assert.equal(count,2080);assert.equal(ends.size,2080);
 });
-test('a full random cycle draws all 500 without repeats, survives reload, and never immediately repeats on rollover',()=>{
+test('a full random cycle draws all 520 without repeats, survives reload, and never immediately repeats on rollover',()=>{
   let seed=123456;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   let s=C.create('all',random);const visited=new Set([s.caseId]),order=[s.caseId];
-  for(let i=1;i<500;i++){s=C.draw(JSON.parse(JSON.stringify(s)),'all',random);assert.ok(C.valid(s));assert.ok(!visited.has(s.caseId));visited.add(s.caseId);order.push(s.caseId);}
-  assert.equal(visited.size,500);assert.equal(s.seen.length,500);assert.notDeepEqual(order,C.ids);
+  for(let i=1;i<520;i++){s=C.draw(JSON.parse(JSON.stringify(s)),'all',random);assert.ok(C.valid(s));assert.ok(!visited.has(s.caseId));visited.add(s.caseId);order.push(s.caseId);}
+  assert.equal(visited.size,520);assert.equal(s.seen.length,520);assert.notDeepEqual(order,C.ids);
   const last=s.caseId,next=C.draw(s,'all',random);assert.notEqual(next.caseId,last);assert.equal(next.seen.length,1);
-  assert.equal(s.seen.length,500,'draw must not mutate previous state');
+  assert.equal(s.seen.length,520,'draw must not mutate previous state');
   for(const value of [-1,0,1,Infinity,NaN,99])assert.ok(C.valid(C.create('all',()=>value)));
 });
 test('category filters preserve other categories and reset only an exhausted selected category',()=>{
@@ -57,7 +57,7 @@ test('archived scenario shell still loads its original modules for migration reg
   const scripts=Array.from(html.matchAll(/<script src="\.\/([^\"]+)"/g),m=>m[1]);
   assert.deepEqual(scripts,['scenario-seeds.js','scenario-data.js','scenario-core.js','cards-layout.js','scenario.js','pwa-update.js']);
   for(const file of scripts.slice(0,4))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
-  assert.equal(context.FerryScenarioCore.scenarios.length,500);assert.equal(context.FerryLightCore,undefined);
+  assert.equal(context.FerryScenarioCore.scenarios.length,520);assert.equal(context.FerryLightCore,undefined);
   for(const file of scripts.slice(0,3))assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/fetch\(|https?:|innerHTML|eval\(/);
   for(const file of [...scripts.slice(0,3),'scenario.js','index.html'])assert.doesNotMatch(fs.readFileSync(path.join(root,file),'utf8'),/[没现离还写给开满们处独这来后为会说时从变断决错却见项过装]/);
   assert.doesNotMatch(html,/下一章|十二章|一盞燈的旅程|light-story\.js|light-core\.js/);
@@ -89,9 +89,9 @@ test('fresh visit persists its draw immediately; refresh restores it and leaves 
   assert.ok(s.reads.every(k=>k===KEY));assert.ok(s.writes.every(([k])=>k===KEY));
   assert.equal(s.elements.hand.children.length,2);assert.equal(s.elements.confirm.disabled,true);assert.equal(s.elements.journeyTrack.children.length,3);
 });
-test('every one of the 2000 UI routes confirms twice, restores each phase and allows replay then next draw',async()=>{
+test('every one of the 2080 UI routes confirms twice, restores each phase and allows replay then next draw',async()=>{
   for(const c of C.scenarios)for(const a of [0,1])for(const r of [0,1]){
-    const s=setup({[KEY]:JSON.stringify(initial(c.id))});assert.equal(s.elements.chapterChoice.children.length,26);
+    const s=setup({[KEY]:JSON.stringify(initial(c.id))});assert.equal(s.elements.chapterChoice.children.length,27);
     await s.elements.hand.children[a].emit('click');assert.equal(s.writes.length,0);await s.elements.backStory.emit('click');assert.equal(s.elements.confirm.disabled,false);
     await s.elements.confirm.emit('click');let copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.sceneTitle.textContent,c.paths[a].after.title);
     await s.choose(r);copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.sceneTitle.textContent,c.paths[a].replies[r].end.title);
