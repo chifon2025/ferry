@@ -32,7 +32,7 @@
     if(s.phase==='scene')return c.event;
     if(s.phase==='flip'){
       const chosen=c.reactions.filter(r=>s.reactions.includes(r.id));
-      if(c.release)return {title:c.release.title,text:'剛才冒出的念頭\n'+chosen.map(r=>'「'+r.title+'」').join('\n')+'\n\n'+c.release.feel+'\n\n也許，我正抓緊的是：\n'+c.release.wants.join('\n')+'\n\n不用分析哪一個才對，只輕輕問自己：\n我能允許現在的感覺先在這裡嗎？\n我願意鬆開一點點嗎？\n\n答案是「還不願意」也可以。放下不是命令；先不跟著念頭衝出去，就已經多了一點空間。'};
+      if(c.release)return {title:c.release.title,text:'剛才心裡冒出：\n'+chosen.map(r=>'「'+r.title+'」').join('\n')+'\n\n先不用想這些念頭對不對。\n'+c.release.feel+'\n\n你可能只是很想：\n・'+c.release.wants.join('\n・')+'\n\n現在只問自己一句：\n「我可以先不抓這麼緊嗎？」\n\n能鬆一點，就鬆一點。\n還不能，也沒關係。\n感覺還在，你也可以先看下一步。'};
       return {title:chosen.length===1?'「'+chosen[0].title+'」':'幾種心情，可以同時存在',text:chosen.map(r=>'「'+r.title+'」\n'+r.text).join('\n\n')+'\n\n我可以看見這些念頭，不用急著跟著它們走。\n\n這只是另一個角度，不貼近你也沒關係。還沒平靜，也可以選下一步。'};
     }
     if(s.phase==='response')return {title:'眼前，先做哪一步？',text:'事情還是這件事，不用勉強自己想開。\n\n'+c.event.text+'\n\n先選一個你願意試的做法，不需要答對。'};
