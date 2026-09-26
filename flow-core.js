@@ -32,10 +32,11 @@
     if(s.phase==='scene')return c.event;
     if(s.phase==='flip'){
       const chosen=c.reactions.filter(r=>s.reactions.includes(r.id));
-      if(c.release)return {title:c.release.title,text:'剛才心裡冒出：\n'+chosen.map(r=>'「'+r.title+'」').join('\n')+'\n\n先不用想這些念頭對不對。\n'+c.release.feel+'\n\n你可能只是很想：\n・'+c.release.wants.join('\n・')+'\n\n現在只問自己一句：\n「我可以先不抓這麼緊嗎？」\n\n能鬆一點，就鬆一點。\n還不能，也沒關係。\n感覺還在，你也可以先看下一步。'};
-      return {title:chosen.length===1?'「'+chosen[0].title+'」':'幾種心情，可以同時存在',text:chosen.map(r=>'「'+r.title+'」\n'+r.text).join('\n\n')+'\n\n我可以看見這些念頭，不用急著跟著它們走。\n\n這只是另一個角度，不貼近你也沒關係。還沒平靜，也可以選下一步。'};
+      const wanted=c.release?chosen.map(r=>c.release.wants[Number(r.id.slice(1))]).filter(Boolean):[c.mirror.want];
+      const felt=c.release?'\n\n'+c.release.feel:'';
+      return {title:c.release?.title||'先看見，我正抓緊什麼',text:'剛才心裡冒出：\n'+chosen.map(r=>'「'+r.title+'」').join('\n')+felt+'\n\n這些念頭下面，常有兩股力。\n\n我很想：'+wanted.join('\n也想：')+'\n\n我很怕：'+c.mirror.avoid+'\n\n目標不用丟，責任也不用逃。\n先讓現在的感覺在這裡，再問自己：\n\n「即使結果還沒有改變，我可以先鬆開『非得立刻照我想的不可』嗎？」\n\n能鬆一點，就鬆一點。\n還不能，也沒關係。\n下一步，不靠恐懼催，也一樣可以做。'};
     }
-    if(s.phase==='response')return {title:'眼前，先做哪一步？',text:'事情還是這件事，不用勉強自己想開。\n\n'+c.event.text+'\n\n先選一個你願意試的做法，不需要答對。'};
+    if(s.phase==='response')return {title:'眼前，先做哪一步？',text:'事情和目標都還在。放下抓緊，不是什麼都不做。\n\n'+c.event.text+'\n\n先選一個你願意做的現實步驟，不需要靠焦慮證明自己很努力。'};
     return c.actions.find(a=>a.id===s.action).end;
   }
   function transition(s,e,random=Math.random){

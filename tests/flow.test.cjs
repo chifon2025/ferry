@@ -8,28 +8,26 @@ test('all 520 stable situations support all 8320 combination/action paths withou
     assert.deepEqual(c.event,O.scenarios.find(o=>o.id===c.id).event);assert.equal(c.reactions.length,3);assert.equal(c.actions.length,2);const ends=[new Set(),new Set()];
     for(let mask=0;mask<8;mask++)for(let a=0;a<2;a++){
       let s=initial(c.id);for(let i=0;i<3;i++)if(mask&(1<<i))s=C.transition(s,{type:'choose',id:'t'+i});assert.ok(C.valid(s));assert.equal(s.phase,'scene');
-      if(mask){s=C.transition(s,{type:'flip'});assert.ok(C.valid(s));const text=C.sceneFor(s).text;for(let i=0;i<3;i++)assert.equal(text.includes(c.release?c.reactions[i].title:c.reactions[i].text),!!(mask&(1<<i)));s=C.transition(s,{type:'continue'});}else s=C.transition(s,{type:'skip'});
+      if(mask){s=C.transition(s,{type:'flip'});assert.ok(C.valid(s));const text=C.sceneFor(s).text;for(let i=0;i<3;i++)assert.equal(text.includes(c.reactions[i].title),!!(mask&(1<<i)));s=C.transition(s,{type:'continue'});}else s=C.transition(s,{type:'skip'});
       assert.ok(C.valid(s));assert.equal(s.phase,'response');s=C.transition(s,{type:'choose',id:'a'+a});assert.equal(s.phase,'ending');assert.ok(C.valid(s));ends[a].add(C.sceneFor(s).text);paths++;
       assert.equal(C.restore(C.snapshot(s)).reactions.length,0);assert.ok(!JSON.stringify(C.snapshot(s)).includes('reactions'));
     }assert.equal(ends[0].size,1);assert.equal(ends[1].size,1);assert.notEqual([...ends[0]][0],[...ends[1]][0]);
   }assert.equal(paths,8320);
 });
-test('five pilots and twenty money-pressure cases use the release pause; the other 495 retain reframing',()=>{
+test('all 520 cases expose wanting, aversion and release while 25 keep bespoke inner dialogue',()=>{
   const ids=['s041','s003','s201','s096','s131'];assert.deepEqual(C.scenarios.filter(c=>c.release?.group==='pilot').map(c=>c.id).sort(),[...ids].sort());
   assert.equal(C.scenarios.filter(c=>c.release?.group==='money').length,20);assert.equal(new Set(C.scenarios.filter(c=>c.release?.group==='money').map(c=>c.reactions.map(r=>r.title).join('|'))).size,20);
   for(const c of C.scenarios){let s=initial(c.id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});const scene=C.sceneFor(s);
-    if(c.release){assert.match(scene.text,/剛才心裡冒出/);assert.match(scene.text,/你可能只是很想/);assert.match(scene.text,/我可以先不抓這麼緊嗎/);assert.match(scene.text,/還不能，也沒關係/);assert.doesNotMatch(scene.text,/想被肯定|想控制|想安心|我能允許|不用急著跟著它們走/);}
-    else {assert.match(scene.text,/不用急著跟著它們走/);assert.doesNotMatch(scene.text,/我可以先不抓這麼緊嗎/);}
+    assert.match(scene.text,/剛才心裡冒出/);assert.match(scene.text,/我很想/);assert.match(scene.text,/我很怕/);assert.match(scene.text,/目標不用丟，責任也不用逃/);assert.match(scene.text,/非得立刻照我想的不可/);assert.match(scene.text,/還不能，也沒關係/);assert.match(scene.text,/不靠恐懼催/);assert.doesNotMatch(scene.text,/放下就會|保證|吸引/);
   }
   const vivid=new Map([['s041','想頂回去'],['s003','怕催了會被嫌煩'],['s201','又滑回對話框'],['s096','憑什麼又是我'],['s131','又不甘心像是自己全錯']]);
   for(const [id,phrase] of vivid){let s=initial(id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});assert.match(C.sceneFor(s).text,new RegExp(phrase));}
   const moneyVivid=new Map([['s501','房租就要扣了'],['s508','機具停著'],['s509','想到錢不表示你不愛他'],['s518','立刻辭職和永遠忍耐'],['s520','腦子卻不肯下班']]);
   for(const [id,phrase] of moneyVivid){let s=initial(id);s=C.transition(s,{type:'choose',id:'t0'});s=C.transition(s,{type:'flip'});assert.match(C.sceneFor(s).text,new RegExp(phrase));}
 });
-test('five release cases show release labels and button while an ordinary case keeps existing labels',async()=>{
+test('bespoke and ordinary cases share the same abundance labels and release button',async()=>{
   for(const id of ['s041','s003','s201','s096','s131','s001']){const s=setup({[KEY]:JSON.stringify(C.snapshot(initial(id)))}),e=s.elements;await e.hand.children[0].emit('click');await e.confirm.emit('click');
-    if(C.caseFor(initial(id)).release){assert.equal(e.stageLabel.textContent,'② 先停一下 · 鬆一點');assert.equal(e.confirm.textContent,'帶著感覺，看看下一步');}
-    else {assert.equal(e.stageLabel.textContent,'② 翻牌 · 看見在意');assert.equal(e.confirm.textContent,'選眼前的一小步');}
+    assert.equal(e.stageLabel.textContent,'② 看見抓緊 · 鬆一點');assert.equal(e.confirm.textContent,'鬆一點，回到能做的事');
   }
 });
 test('new homepage loads unified flow while old pilot URL redirects, all content stays original/local',()=>{
@@ -89,7 +87,7 @@ test('menu exposes the five-case release filter and changes only after explicit 
 });
 test('reload drops only reactions, preserves pending stage/history, and short readers lose no flip text',async()=>{
   const s=setup({[KEY]:JSON.stringify(C.snapshot(initial('s041')))},{readerHeight:52,lineChars:9,innerHeight:844,visualHeight:620}),e=s.elements;
-  for(const b of e.hand.children)await b.emit('click');await e.confirm.emit('click');const flip=await s.readAll();for(const r of C.caseFor(initial('s041')).reactions)assert.ok(flip.includes(r.title));assert.match(flip,/我可以先不抓這麼緊嗎/);
+  for(const b of e.hand.children)await b.emit('click');await e.confirm.emit('click');const flip=await s.readAll();for(const r of C.caseFor(initial('s041')).reactions)assert.ok(flip.includes(r.title));assert.match(flip,/非得立刻照我想的不可/);
   const copy=setup(Object.fromEntries(s.data));assert.equal(copy.elements.game.dataset.phase,'scene');assert.ok(copy.elements.hand.children.every(b=>b.attrs['aria-pressed']==='false'));
   s.window.visualViewport.height=500;await s.window.visualViewport.emit('resize');for(const fn of s.timers.values())fn();assert.equal(e.game.style.values['--app-height'],'500px');
   await e.confirm.emit('click');assert.equal(setup(Object.fromEntries(s.data)).elements.game.dataset.phase,'response');

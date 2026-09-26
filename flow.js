@@ -50,9 +50,9 @@
   function focusScene(){ $('sceneTitle').focus({preventScroll:true});$('announcement').textContent=$('sceneTitle').textContent; }
   function baseScene(){
     const scene=C.sceneFor(state);
-    return state.phase==='ending'?{title:scene.title,text:scene.text+'\n\n帶回日常\n'+C.caseFor(state).carry}:scene;
+    return state.phase==='ending'?{title:scene.title,text:scene.text+'\n\n帶回日常\n'+C.caseFor(state).carry+'\n\n做完，放下結果\n你已完成此刻能做的一步。結果還需要時間、他人與現實條件共同發生；現在不必再用反覆想，催它立刻到來。'}:scene;
   }
-  function phaseLabel(){if(state.phase==='flip'&&C.caseFor(state).release)return '② 先停一下 · 鬆一點';return {scene:'① 認出第一反應',flip:'② 翻牌 · 看見在意',response:'③ 選眼前的一步',ending:'做完，先到這裡'}[state.phase];}
+  function phaseLabel(){return {scene:'① 看見第一反應',flip:'② 看見抓緊 · 鬆一點',response:'③ 清楚做一步',ending:'④ 做完 · 放下結果'}[state.phase];}
   function syncReactions(){
     if(state.phase!=='scene')return;
     for(const [i,button] of Array.from($('hand').children).entries()){
@@ -90,7 +90,7 @@
       });$('hand').append(button);
     }
     $('confirm').disabled=state.phase==='response';
-    $('confirm').textContent={scene:'都不像，先略過',flip:ch.release?'帶著感覺，看看下一步':'選眼前的一小步',response:'先選一個做法',ending:'再遇見一件事'}[state.phase];
+    $('confirm').textContent={scene:'都不像，先略過',flip:'鬆一點，回到能做的事',response:'先選一個做法',ending:'再遇見一件事'}[state.phase];
     $('footerNote').textContent=writable?'反應不存檔；事情與行動進度留在這台裝置。':'本次暫不保存；關閉後可能需要重新開始。';
     syncReactions();$('backStory').textContent=state.phase==='flip'?'調整選擇':'回情境';showScene(baseScene(),phaseLabel(),state.phase==='flip');if(focus)focusScene();
   }

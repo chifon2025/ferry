@@ -9,9 +9,9 @@ const base=process.argv[2]||'http://127.0.0.1:8138/',ids=['s041','s003','s201','
       for(const id of ids){
         await page.evaluate(({id,state})=>localStorage.setItem('du_ferry_flow_v1',JSON.stringify({...state,caseId:id,seen:[id]})),{id,state:C.snapshot(C.create())});await page.reload();
         for(const b of await page.locator('#hand button').all())await b.click();const raw=await page.evaluate(()=>localStorage.getItem('du_ferry_flow_v1'));await page.locator('#confirm').click();
-        assert.equal(await page.locator('#stageLabel').textContent(),'② 先停一下 · 鬆一點');assert.equal(await page.locator('#confirm').textContent(),'帶著感覺，看看下一步');
+        assert.equal(await page.locator('#stageLabel').textContent(),'② 看見抓緊 · 鬆一點');assert.equal(await page.locator('#confirm').textContent(),'鬆一點，回到能做的事');
         const read=await page.evaluate(()=>{let text='',count=0;do{const story=document.getElementById('storyText'),reader=document.getElementById('reader');if(story.scrollHeight>reader.clientHeight+1)throw Error('page clipped');text+=story.textContent;count++;if(document.getElementById('pageNext').disabled)break;document.getElementById('pageNext').click();if(count>100)throw Error('page loop');}while(true);return {text,count};});pages+=read.count;
-        for(const phrase of ['剛才心裡冒出：','你可能只是很想：','「我可以先不抓這麼緊嗎？」','還不能，也沒關係。',vivid[id]])assert.ok(read.text.includes(phrase),id+' missing '+phrase);
+        for(const phrase of ['剛才心裡冒出：','我很想：','我很怕：','目標不用丟，責任也不用逃。','非得立刻照我想的不可','還不能，也沒關係。',vivid[id]])assert.ok(read.text.includes(phrase),id+' missing '+phrase);
         assert.equal(await page.evaluate(()=>localStorage.getItem('du_ferry_flow_v1')),raw);await page.locator('#backStory').click();assert.equal(await page.locator('#hand button[aria-pressed=true]').count(),3);await page.locator('#confirm').click();await page.locator('#confirm').click();assert.equal(await page.locator('#game').getAttribute('data-phase'),'response');checks++;
       }await context.close();
     }
